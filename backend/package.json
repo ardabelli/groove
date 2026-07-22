@@ -1,0 +1,35 @@
+{
+  "name": "groove-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "tsx src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@ai-sdk/groq": "^4.0.13",
+    "@neondatabase/serverless": "^1.1.0",
+    "ai": "^7.0.34",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.20.6",
+    "typescript": "^5"
+  }
+}
