@@ -84,6 +84,8 @@ curateRouter.post("/", async (req, res) => {
       ok: true,
       data: {
         curatorNote: curatorResponse.curator_note,
+        playlistTitle: curatorResponse.playlist_title,
+        playlistDescription: curatorResponse.playlist_description,
         moodParameters: curatorResponse.mood_parameters,
         usedPersonalization: !tasteProfile.empty,
         tracks: tracks.map(toTrackDTO),

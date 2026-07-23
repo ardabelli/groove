@@ -92,8 +92,8 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
           />
           <TrackList tracks={state.data.tracks} />
           <PlaylistCta
-            vibe={vibe}
-            curatorNote={state.data.curatorNote}
+            playlistTitle={state.data.playlistTitle}
+            playlistDescription={state.data.playlistDescription}
             trackUris={state.data.tracks.map((t) => t.uri)}
           />
         </div>

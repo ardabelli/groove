@@ -7,8 +7,8 @@ import { BACKEND_URL } from "@/lib/backend";
 import type { CreatePlaylistResult } from "@/lib/types";
 
 async function createGroovePlaylist(
-  vibe: string,
-  curatorNote: string,
+  playlistTitle: string,
+  playlistDescription: string,
   trackUris: string[]
 ): Promise<CreatePlaylistResult> {
   try {
@@ -16,7 +16,7 @@ async function createGroovePlaylist(
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ vibe, curatorNote, trackUris }),
+      body: JSON.stringify({ playlistTitle, playlistDescription, trackUris }),
     });
     return (await res.json()) as CreatePlaylistResult;
   } catch {
@@ -25,12 +25,12 @@ async function createGroovePlaylist(
 }
 
 export function PlaylistCta({
-  vibe,
-  curatorNote,
+  playlistTitle,
+  playlistDescription,
   trackUris,
 }: {
-  vibe: string;
-  curatorNote: string;
+  playlistTitle: string;
+  playlistDescription: string;
   trackUris: string[];
 }) {
   const [isPending, startTransition] = useTransition();
@@ -38,7 +38,7 @@ export function PlaylistCta({
 
   function handleCreate() {
     startTransition(async () => {
-      const result = await createGroovePlaylist(vibe, curatorNote, trackUris);
+      const result = await createGroovePlaylist(playlistTitle, playlistDescription, trackUris);
       if (result.ok) {
         setCreated(result.data);
         toast.success(`Created "${result.data.playlistName}" in Spotify`);
@@ -54,7 +54,11 @@ export function PlaylistCta({
 
   if (created) {
     return (
-      <Button size="lg" render={<a href={created.externalUrl} target="_blank" rel="noopener noreferrer" />}>
+      <Button
+        size="lg"
+        nativeButton={false}
+        render={<a href={created.externalUrl} target="_blank" rel="noopener noreferrer" />}
+      >
         Open in Spotify
       </Button>
     );

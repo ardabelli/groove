@@ -5,6 +5,7 @@ export function SignInButton({ size = "lg" }: { size?: "sm" | "lg" }) {
   return (
     <Button
       size={size}
+      nativeButton={false}
       className="bg-[#1db954] hover:bg-[#1ed760] text-black"
       render={<a href={`${BACKEND_URL}/api/auth/login`} />}
     >

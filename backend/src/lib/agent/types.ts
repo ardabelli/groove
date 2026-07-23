@@ -22,6 +22,8 @@ export type CurateResult =
       ok: true;
       data: {
         curatorNote: string;
+        playlistTitle: string;
+        playlistDescription: string;
         moodParameters: CuratorResponse["mood_parameters"];
         usedPersonalization: boolean;
         tracks: TrackDTO[];

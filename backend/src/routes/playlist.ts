@@ -6,8 +6,8 @@ import { SpotifyRateLimitError } from "../lib/spotify/errors";
 import type { CreatePlaylistResult } from "../lib/agent/types";
 
 const BodySchema = z.object({
-  vibe: z.string().min(1),
-  curatorNote: z.string().min(1),
+  playlistTitle: z.string().min(1).max(60),
+  playlistDescription: z.string().min(1).max(300),
   trackUris: z.array(z.string()).min(1),
 });
 
@@ -34,12 +34,12 @@ playlistRouter.post("/", async (req, res) => {
     } satisfies CreatePlaylistResult);
     return;
   }
-  const { vibe, curatorNote, trackUris } = parsedBody.data;
+  const { playlistTitle, playlistDescription, trackUris } = parsedBody.data;
 
   try {
     const playlist = await createPlaylist(accessToken, {
-      name: `Groove — ${vibe.slice(0, 60)}`,
-      description: curatorNote.slice(0, 300),
+      name: `Groove — ${playlistTitle}`,
+      description: playlistDescription,
       public: false,
     });
 
