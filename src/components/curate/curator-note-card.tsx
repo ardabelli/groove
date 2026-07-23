@@ -18,7 +18,9 @@ export function CuratorNoteCard({
         <CardDescription>{curatorNote}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
-        <Badge variant="secondary">{moodParameters.energy} energy</Badge>
+        <Badge variant="outline" className="border-primary/25 bg-primary/15 text-primary">
+          {moodParameters.energy} energy
+        </Badge>
         {moodParameters.descriptors.map((descriptor) => (
           <Badge key={descriptor} variant="outline">
             {descriptor}

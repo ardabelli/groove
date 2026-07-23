@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const bricolageGrotesque = Bricolage_Grotesque({
+  variable: "--font-heading",
   subsets: ["latin"],
 });
 
@@ -27,12 +32,23 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${bricolageGrotesque.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col relative">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 -z-20 h-full w-full object-cover"
+          style={{ filter: "brightness(0.18) saturate(0.6)" }}
+        >
+          <source src="/hero-bg.mp4" type="video/mp4" />
+        </video>
+        <div className="fixed inset-0 -z-10 bg-background/60" />
         <SiteHeader />
         {children}
-        <Toaster />
+        <Toaster theme="dark" />
       </body>
     </html>
   );

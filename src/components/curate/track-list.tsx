@@ -3,7 +3,7 @@ import type { TrackDTO } from "@/lib/types";
 
 export function TrackList({ tracks }: { tracks: TrackDTO[] }) {
   return (
-    <ScrollArea className="h-[520px] rounded-lg border">
+    <ScrollArea className="h-[520px] rounded-xl border bg-card">
       <div className="flex flex-col gap-2 p-3">
         {tracks.map((track) => (
           <iframe

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CuratorNoteCard } from "@/components/curate/curator-note-card";
@@ -63,16 +64,23 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
       <form action={formAction} className="flex flex-col gap-3">
         <Textarea
           name="vibe"
-          placeholder="e.g. Deep work, melodic techno, low energy"
+          placeholder="e.g. A playlist that feels like I'm in Miami in the eighties"
           value={vibe}
           onChange={(e) => setVibe(e.target.value)}
           rows={3}
           required
+          disabled={isPending}
+          className="rounded-xl border-border bg-card px-4 py-3.5 text-sm placeholder:text-muted-foreground/50 focus-visible:border-primary/50 focus-visible:ring-primary/50"
         />
         {state && !state.ok && state.error === "invalid_vibe" && (
           <p className="text-sm text-destructive">{state.message}</p>
         )}
-        <Button type="submit" disabled={isPending} className="self-start">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="self-start rounded-full bg-foreground text-background hover:bg-foreground/90"
+        >
+          {isPending && <Loader2 className="size-4 animate-spin" />}
           {isPending
             ? isAuthenticated
               ? "Curating…"
@@ -82,6 +90,18 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
               : "Sign in & curate my set"}
         </Button>
       </form>
+
+      {isPending && isAuthenticated && (
+        <div className="flex flex-col items-center justify-center gap-4 py-16">
+          <div className="relative size-12">
+            <div className="absolute inset-0 rounded-full border-2 border-border" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-t-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Analyzing your vibe and building your set…
+          </p>
+        </div>
+      )}
 
       {state?.ok && (
         <div className="flex flex-col gap-6">

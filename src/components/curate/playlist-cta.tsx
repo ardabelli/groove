@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { Check, Loader2, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SpotifyIcon } from "@/components/spotify-icon";
 import { BACKEND_URL } from "@/lib/backend";
 import type { CreatePlaylistResult } from "@/lib/types";
 
@@ -54,19 +56,45 @@ export function PlaylistCta({
 
   if (created) {
     return (
-      <Button
-        size="lg"
-        nativeButton={false}
-        render={<a href={created.externalUrl} target="_blank" rel="noopener noreferrer" />}
-      >
-        Open in Spotify
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          size="lg"
+          nativeButton={false}
+          className="rounded-full hover:bg-[#1ed760]"
+          render={<a href={created.externalUrl} target="_blank" rel="noopener noreferrer" />}
+        >
+          <SpotifyIcon size={14} />
+          Open in Spotify
+          <ArrowUpRight className="size-3.5" />
+        </Button>
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <div className="flex size-4 items-center justify-center rounded-full bg-primary/15">
+            <Check className="size-2.5 text-primary" />
+          </div>
+          Created &quot;{created.playlistName}&quot;
+        </div>
+      </div>
     );
   }
 
   return (
-    <Button size="lg" onClick={handleCreate} disabled={isPending}>
-      {isPending ? "Creating playlist…" : "Create in Spotify"}
+    <Button
+      size="lg"
+      onClick={handleCreate}
+      disabled={isPending}
+      className="rounded-full hover:bg-[#1ed760]"
+    >
+      {isPending ? (
+        <>
+          <Loader2 className="size-4 animate-spin" />
+          Creating playlist…
+        </>
+      ) : (
+        <>
+          <SpotifyIcon size={14} />
+          Create in Spotify
+        </>
+      )}
     </Button>
   );
 }

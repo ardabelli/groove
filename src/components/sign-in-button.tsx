@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SpotifyIcon } from "@/components/spotify-icon";
 import { BACKEND_URL } from "@/lib/backend";
 
 export function SignInButton({ size = "lg" }: { size?: "sm" | "lg" }) {
@@ -6,9 +7,10 @@ export function SignInButton({ size = "lg" }: { size?: "sm" | "lg" }) {
     <Button
       size={size}
       nativeButton={false}
-      className="bg-[#1db954] hover:bg-[#1ed760] text-black"
+      className="rounded-full hover:bg-[#1ed760]"
       render={<a href={`${BACKEND_URL}/api/auth/login`} />}
     >
+      <SpotifyIcon size={14} />
       Connect with Spotify
     </Button>
   );
