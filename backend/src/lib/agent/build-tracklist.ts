@@ -1,8 +1,9 @@
 
 import { searchTracks } from "../spotify/search";
 import type { SpotifyTrack } from "../spotify/types";
+import type { TrackSelection } from "./schema";
 
-const TRACKS_PER_QUERY = 3;
+const CANDIDATES_PER_TRACK = 3;
 const MAX_TRACKLIST_LENGTH = 20;
 
 const VERSION_KEYWORDS =
@@ -23,35 +24,62 @@ function stripVersionMarkers(title: string): string {
   return stripped.trim();
 }
 
+// Uses all credited artists (sorted) rather than just the first, so the same
+// song re-issued under a different artist credit order still dedupes.
 function normalizeKey(track: SpotifyTrack): string {
-  const artist = track.artists[0]?.name.toLowerCase().trim() ?? "";
+  const artists = track.artists
+    .map((a) => a.name.toLowerCase().trim())
+    .sort()
+    .join(",");
   const title = stripVersionMarkers(track.name.toLowerCase().trim());
-  return `${artist}::${title}`;
+  return `${artists}::${title}`;
+}
+
+function escapeQueryValue(value: string): string {
+  return value.replace(/"/g, "");
+}
+
+function buildStrictQuery({ artist, title }: TrackSelection): string {
+  return `artist:"${escapeQueryValue(artist)}" track:"${escapeQueryValue(title)}"`;
+}
+
+function buildLooseQuery({ artist, title }: TrackSelection): string {
+  return `${artist} ${title}`;
 }
 
 export async function buildTracklist(
   accessToken: string,
-  searchQueries: string[]
+  tracks: TrackSelection[]
 ): Promise<SpotifyTrack[]> {
   const seenIds = new Set<string>();
   const seenKeys = new Set<string>();
   const ordered: SpotifyTrack[] = [];
 
-  for (const query of searchQueries) {
-    const results = await searchTracks(accessToken, query, { limit: TRACKS_PER_QUERY });
+  function isUsable(track: SpotifyTrack): boolean {
+    return !seenIds.has(track.id) && !seenKeys.has(normalizeKey(track));
+  }
 
-    for (const track of results) {
-      if (seenIds.has(track.id)) continue;
-      const key = normalizeKey(track);
-      if (seenKeys.has(key)) continue;
+  for (const selection of tracks) {
+    let candidates = await searchTracks(accessToken, buildStrictQuery(selection), {
+      limit: CANDIDATES_PER_TRACK,
+    });
+    let match = candidates.find(isUsable);
 
-      seenIds.add(track.id);
-      seenKeys.add(key);
-      ordered.push(track);
+    if (!match) {
+      candidates = await searchTracks(accessToken, buildLooseQuery(selection), {
+        limit: CANDIDATES_PER_TRACK,
+      });
+      match = candidates.find(isUsable);
+    }
 
-      if (ordered.length >= MAX_TRACKLIST_LENGTH) {
-        return ordered;
-      }
+    if (!match) continue;
+
+    seenIds.add(match.id);
+    seenKeys.add(normalizeKey(match));
+    ordered.push(match);
+
+    if (ordered.length >= MAX_TRACKLIST_LENGTH) {
+      return ordered;
     }
   }
 

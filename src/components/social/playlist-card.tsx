@@ -28,6 +28,7 @@ export function PlaylistCard({
         <p className="text-sm text-muted-foreground">{playlist.description}</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground italic">&quot;{playlist.curatorNote}&quot;</p>
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="border-primary/25 bg-primary/15 text-primary">
             {playlist.moodParameters.energy} energy

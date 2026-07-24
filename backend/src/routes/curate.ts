@@ -74,7 +74,7 @@ curateRouter.post("/", async (req, res) => {
 
     const curatorResponse = await runCurator({ vibe, tasteProfile });
 
-    const tracks = await buildTracklist(accessToken, curatorResponse.search_queries);
+    const tracks = await buildTracklist(accessToken, curatorResponse.tracks);
     if (tracks.length === 0) {
       res.json({ ok: false, error: "no_tracks_found" } satisfies CurateResult);
       return;

@@ -112,6 +112,7 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
           />
           <TrackList tracks={state.data.tracks} />
           <PlaylistCta
+            key={state.data.tracks.map((t) => t.id).join("|")}
             playlistTitle={state.data.playlistTitle}
             playlistDescription={state.data.playlistDescription}
             curatorNote={state.data.curatorNote}
