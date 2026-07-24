@@ -6,6 +6,7 @@ import { SpotifyRateLimitError } from "../lib/spotify/errors";
 import { buildTasteProfile } from "../lib/agent/taste-profile";
 import { runCurator, AgentError } from "../lib/agent/curator";
 import { buildTracklist } from "../lib/agent/build-tracklist";
+import { createPromptRecord } from "../db/prompts";
 import type { CurateResult, TrackDTO } from "../lib/agent/types";
 
 const VibeSchema = z.string().trim().min(3, "Tell me a bit more about the vibe.").max(300);
@@ -47,8 +48,9 @@ export const curateRouter = Router();
 
 curateRouter.post("/", async (req, res) => {
   let accessToken: string;
+  let userId: string;
   try {
-    ({ accessToken } = await getAuthContext(req, res));
+    ({ accessToken, userId } = await getAuthContext(req, res));
   } catch (err) {
     if (err instanceof AuthError) {
       res.json({ ok: false, error: "unauthenticated" } satisfies CurateResult);
@@ -67,6 +69,12 @@ curateRouter.post("/", async (req, res) => {
     return;
   }
   const vibe = parsedVibe.data;
+
+  try {
+    await createPromptRecord({ userId, vibe });
+  } catch (dbErr) {
+    console.error("[POST /api/curate] failed to persist prompt history", dbErr);
+  }
 
   try {
     const { tracks: topTracks, artists: topArtists } = await fetchTasteData(accessToken);

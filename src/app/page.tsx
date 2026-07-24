@@ -23,7 +23,7 @@ export default async function Home({
         </div>
         <VibeForm initialVibe={vibe} />
         <div className="flex flex-col items-center gap-1.5 pt-10 pb-4 text-muted-foreground/60">
-          <span className="text-xs">Scroll down for what the community is sharing</span>
+          <span className="text-xs">Scroll down to see playlists created by Groove</span>
           <ChevronDown className="size-4 animate-bounce" />
         </div>
       </div>

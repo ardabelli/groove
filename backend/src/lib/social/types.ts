@@ -14,6 +14,7 @@ export interface PlaylistSummaryDTO {
   spotifyUrl: string;
   likeCount: number;
   likedByViewer: boolean;
+  isShared: boolean;
   sharedAt: string;
   owner: { id: string; displayName: string | null; imageUrl: string | null };
 }
@@ -21,7 +22,7 @@ export interface PlaylistSummaryDTO {
 export type ShareErrorCode = "unauthenticated" | "not_found" | "forbidden" | "unknown";
 
 export type ShareResult =
-  | { ok: true; data: { id: string; sharedAt: string } }
+  | { ok: true; data: { id: string; isShared: boolean; sharedAt: string | null } }
   | { ok: false; error: ShareErrorCode; message?: string };
 
 export type LikeErrorCode = "unauthenticated" | "not_found" | "unknown";

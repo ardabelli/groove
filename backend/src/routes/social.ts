@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { getSessionUser } from "../lib/session";
-import { getPopularPlaylists, getFeedPlaylists, getLikedPlaylistIds } from "../db/playlists";
+import {
+  getPopularPlaylists,
+  getFeedPlaylists,
+  getLikedPlaylistIds,
+  getPlaylistsByOwner,
+} from "../db/playlists";
 import type { playlists, users } from "../db/schema";
 import type { PlaylistSummaryDTO, SocialListResult } from "../lib/social/types";
 
@@ -25,6 +30,7 @@ function toSummaryDTO(
     spotifyUrl: playlist.spotifyUrl,
     likeCount: playlist.likeCount,
     likedByViewer: likedIds.has(playlist.id),
+    isShared: playlist.isShared,
     sharedAt: (playlist.sharedAt ?? playlist.createdAt).toISOString(),
     owner,
   };
@@ -44,6 +50,25 @@ socialRouter.get("/popular", async (req, res) => {
     } satisfies SocialListResult);
   } catch (err) {
     console.error("[GET /api/social/popular]", err);
+    res.json({ ok: false, error: "unknown" } satisfies SocialListResult);
+  }
+});
+
+socialRouter.get("/mine", async (req, res) => {
+  const viewer = getSessionUser(req);
+  if (!viewer) {
+    res.json({ ok: false, error: "unknown", message: "unauthenticated" } satisfies SocialListResult);
+    return;
+  }
+  try {
+    const rows = await getPlaylistsByOwner(viewer.id);
+    const likedIds = await getLikedPlaylistIds(viewer.id, rows.map((r) => r.playlist.id));
+    res.json({
+      ok: true,
+      data: { playlists: rows.map((r) => toSummaryDTO(r, likedIds)), hasMore: false },
+    } satisfies SocialListResult);
+  } catch (err) {
+    console.error("[GET /api/social/mine]", err);
     res.json({ ok: false, error: "unknown" } satisfies SocialListResult);
   }
 });

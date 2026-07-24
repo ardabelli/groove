@@ -95,3 +95,13 @@
     @apply font-sans scroll-smooth;
   }
 }
+
+@keyframes tag-bubble-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(var(--bubble-drift, -10px)) scale(1.04);
+  }
+}

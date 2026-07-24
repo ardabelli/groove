@@ -24,11 +24,16 @@ export function SiteHeader() {
       </Link>
       {me?.authenticated && me.user ? (
         <div className="flex items-center gap-3">
-          <Avatar size="sm">
-            <AvatarImage src={me.user.imageUrl ?? undefined} alt={me.user.displayName ?? "User"} />
-            <AvatarFallback>{me.user.displayName?.[0] ?? "U"}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm text-muted-foreground">{me.user.displayName}</span>
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 transition-colors hover:text-primary"
+          >
+            <Avatar size="sm">
+              <AvatarImage src={me.user.imageUrl ?? undefined} alt={me.user.displayName ?? "User"} />
+              <AvatarFallback>{me.user.displayName?.[0] ?? "U"}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm text-muted-foreground">{me.user.displayName}</span>
+          </Link>
           <SignOutButton />
         </div>
       ) : (

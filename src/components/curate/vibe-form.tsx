@@ -67,6 +67,12 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
           placeholder="e.g. A playlist that feels like I'm in Miami in the eighties"
           value={vibe}
           onChange={(e) => setVibe(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
           rows={3}
           required
           disabled={isPending}

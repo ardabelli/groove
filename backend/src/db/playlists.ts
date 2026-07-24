@@ -55,11 +55,29 @@ export async function sharePlaylist(id: string, ownerId: string) {
   return row ?? null;
 }
 
+export async function unsharePlaylist(id: string, ownerId: string) {
+  const [row] = await db
+    .update(playlists)
+    .set({ isShared: false })
+    .where(and(eq(playlists.id, id), eq(playlists.ownerId, ownerId)))
+    .returning();
+  return row ?? null;
+}
+
 const ownerSelection = {
   id: users.id,
   displayName: users.displayName,
   imageUrl: users.imageUrl,
 };
+
+export async function getPlaylistsByOwner(ownerId: string) {
+  return db
+    .select({ playlist: playlists, owner: ownerSelection })
+    .from(playlists)
+    .innerJoin(users, eq(playlists.ownerId, users.id))
+    .where(eq(playlists.ownerId, ownerId))
+    .orderBy(desc(playlists.createdAt));
+}
 
 export async function getPopularPlaylists(limit: number) {
   return db

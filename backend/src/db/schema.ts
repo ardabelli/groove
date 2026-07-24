@@ -41,6 +41,19 @@ export const playlists = pgTable(
   ]
 );
 
+export const promptHistory = pgTable(
+  "prompt_history",
+  {
+    id: text("id").primaryKey().$defaultFn(() => randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    vibe: text("vibe").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("prompt_history_user_id_idx").on(table.userId, table.createdAt)]
+);
+
 export const playlistLikes = pgTable(
   "playlist_likes",
   {

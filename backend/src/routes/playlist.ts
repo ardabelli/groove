@@ -3,7 +3,13 @@ import { z } from "zod";
 import { AuthError, getAuthContext, getSessionUser } from "../lib/session";
 import { createPlaylist, addTracksToPlaylist } from "../lib/spotify/playlists";
 import { SpotifyRateLimitError } from "../lib/spotify/errors";
-import { createPlaylistRecord, getPlaylistById, sharePlaylist, toggleLike } from "../db/playlists";
+import {
+  createPlaylistRecord,
+  getPlaylistById,
+  sharePlaylist,
+  unsharePlaylist,
+  toggleLike,
+} from "../db/playlists";
 import type { CreatePlaylistResult } from "../lib/agent/types";
 import type { ShareResult, LikeResult } from "../lib/social/types";
 
@@ -77,8 +83,9 @@ playlistRouter.post("/", async (req, res) => {
         spotifyUrl: playlist.external_urls.spotify,
       });
       recordId = record.id;
+      await sharePlaylist(record.id, userId);
     } catch (dbErr) {
-      console.error("[POST /api/playlist] failed to persist playlist record", dbErr);
+      console.error("[POST /api/playlist] failed to persist/share playlist record", dbErr);
     }
 
     res.json({
@@ -135,10 +142,45 @@ playlistRouter.post("/:id/share", async (req, res) => {
 
     res.json({
       ok: true,
-      data: { id: shared.id, sharedAt: shared.sharedAt.toISOString() },
+      data: { id: shared.id, isShared: true, sharedAt: shared.sharedAt.toISOString() },
     } satisfies ShareResult);
   } catch (err) {
     console.error("[POST /api/playlist/:id/share]", err);
+    res.json({ ok: false, error: "unknown" } satisfies ShareResult);
+  }
+});
+
+playlistRouter.post("/:id/unshare", async (req, res) => {
+  const user = getSessionUser(req);
+  if (!user) {
+    res.json({ ok: false, error: "unauthenticated" } satisfies ShareResult);
+    return;
+  }
+
+  const { id } = req.params;
+  try {
+    const existing = await getPlaylistById(id);
+    if (!existing) {
+      res.json({ ok: false, error: "not_found" } satisfies ShareResult);
+      return;
+    }
+    if (existing.ownerId !== user.id) {
+      res.json({ ok: false, error: "forbidden" } satisfies ShareResult);
+      return;
+    }
+
+    const unshared = await unsharePlaylist(id, user.id);
+    if (!unshared) {
+      res.json({ ok: false, error: "unknown" } satisfies ShareResult);
+      return;
+    }
+
+    res.json({
+      ok: true,
+      data: { id: unshared.id, isShared: false, sharedAt: null },
+    } satisfies ShareResult);
+  } catch (err) {
+    console.error("[POST /api/playlist/:id/unshare]", err);
     res.json({ ok: false, error: "unknown" } satisfies ShareResult);
   }
 });

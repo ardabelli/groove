@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, Loader2, ArrowUpRight, Share2 } from "lucide-react";
+import { Check, Loader2, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { BACKEND_URL } from "@/lib/backend";
-import type { CreatePlaylistResult, ShareResult, MoodParameters, TrackDTO } from "@/lib/types";
+import type { CreatePlaylistResult, MoodParameters, TrackDTO } from "@/lib/types";
 
 async function createGroovePlaylist(body: {
   playlistTitle: string;
@@ -28,18 +28,6 @@ async function createGroovePlaylist(body: {
   }
 }
 
-async function sharePlaylistToGroove(id: string): Promise<ShareResult> {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/playlist/${id}/share`, {
-      method: "POST",
-      credentials: "include",
-    });
-    return (await res.json()) as ShareResult;
-  } catch {
-    return { ok: false, error: "unknown" };
-  }
-}
-
 export function PlaylistCta({
   playlistTitle,
   playlistDescription,
@@ -54,11 +42,9 @@ export function PlaylistCta({
   tracks: TrackDTO[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [isSharing, startSharing] = useTransition();
   const [created, setCreated] = useState<{ id: string | null; playlistName: string; externalUrl: string } | null>(
     null
   );
-  const [shared, setShared] = useState(false);
 
   function handleCreate() {
     startTransition(async () => {
@@ -71,28 +57,13 @@ export function PlaylistCta({
       });
       if (result.ok) {
         setCreated(result.data);
-        toast.success(`Created "${result.data.playlistName}" in Spotify`);
+        toast.success(`Created "${result.data.playlistName}" in Spotify and shared it to Groove`);
       } else if (result.error === "spotify_rate_limited") {
         toast.error(`Spotify is rate limiting us — try again in ${result.retryAfterSeconds ?? "a few"}s`);
       } else if (result.error === "unauthenticated") {
         toast.error("Your session expired — please sign in again.");
       } else {
         toast.error("Couldn't create the playlist. Please try again.");
-      }
-    });
-  }
-
-  function handleShare() {
-    if (!created?.id) return;
-    startSharing(async () => {
-      const result = await sharePlaylistToGroove(created.id!);
-      if (result.ok) {
-        setShared(true);
-        toast.success("Shared to the Groove social feed");
-      } else if (result.error === "unauthenticated") {
-        toast.error("Your session expired — please sign in again.");
-      } else {
-        toast.error("Couldn't share this playlist. Please try again.");
       }
     });
   }
@@ -110,27 +81,11 @@ export function PlaylistCta({
           Open in Spotify
           <ArrowUpRight className="size-3.5" />
         </Button>
-        {created.id && !shared && (
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={handleShare}
-            disabled={isSharing}
-            className="rounded-full"
-          >
-            {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-3.5" />}
-            Share to Groove
-          </Button>
-        )}
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <div className="flex size-4 items-center justify-center rounded-full bg-primary/15">
             <Check className="size-2.5 text-primary" />
           </div>
-          {shared ? (
-            <>Shared &quot;{created.playlistName}&quot; to Groove</>
-          ) : (
-            <>Created &quot;{created.playlistName}&quot;</>
-          )}
+          Created &amp; shared &quot;{created.playlistName}&quot; to Groove
         </div>
       </div>
     );

@@ -6,6 +6,7 @@ import { authRouter } from "./routes/auth";
 import { curateRouter } from "./routes/curate";
 import { playlistRouter } from "./routes/playlist";
 import { socialRouter } from "./routes/social";
+import { promptsRouter } from "./routes/prompts";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/curate", curateRouter);
 app.use("/api/playlist", playlistRouter);
 app.use("/api/social", socialRouter);
+app.use("/api/prompts", promptsRouter);
 
 const port = Number(process.env.PORT ?? 8000);
 app.listen(port, () => {

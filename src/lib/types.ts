@@ -52,6 +52,7 @@ export interface PlaylistSummaryDTO {
   spotifyUrl: string;
   likeCount: number;
   likedByViewer: boolean;
+  isShared: boolean;
   sharedAt: string;
   owner: { id: string; displayName: string | null; imageUrl: string | null };
 }
@@ -59,7 +60,7 @@ export interface PlaylistSummaryDTO {
 export type ShareErrorCode = "unauthenticated" | "not_found" | "forbidden" | "unknown";
 
 export type ShareResult =
-  | { ok: true; data: { id: string; sharedAt: string } }
+  | { ok: true; data: { id: string; isShared: boolean; sharedAt: string | null } }
   | { ok: false; error: ShareErrorCode; message?: string };
 
 export type LikeErrorCode = "unauthenticated" | "not_found" | "unknown";
@@ -71,3 +72,17 @@ export type LikeResult =
 export type SocialListResult =
   | { ok: true; data: { playlists: PlaylistSummaryDTO[]; hasMore: boolean } }
   | { ok: false; error: "unknown"; message?: string };
+
+export interface PromptHistoryDTO {
+  id: string;
+  vibe: string;
+  createdAt: string;
+}
+
+export type PromptListResult =
+  | { ok: true; data: { prompts: PromptHistoryDTO[] } }
+  | { ok: false; error: "unauthenticated" | "unknown"; message?: string };
+
+export type DeletePromptResult =
+  | { ok: true; data: { id: string } }
+  | { ok: false; error: "unauthenticated" | "not_found" | "forbidden" | "unknown"; message?: string };
