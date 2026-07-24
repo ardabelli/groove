@@ -114,7 +114,9 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
           <PlaylistCta
             playlistTitle={state.data.playlistTitle}
             playlistDescription={state.data.playlistDescription}
-            trackUris={state.data.tracks.map((t) => t.uri)}
+            curatorNote={state.data.curatorNote}
+            moodParameters={state.data.moodParameters}
+            tracks={state.data.tracks}
           />
         </div>
       )}

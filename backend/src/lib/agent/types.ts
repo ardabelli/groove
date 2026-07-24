@@ -34,5 +34,5 @@ export type CurateResult =
 export type PlaylistErrorCode = "unauthenticated" | "spotify_rate_limited" | "unknown";
 
 export type CreatePlaylistResult =
-  | { ok: true; data: { playlistName: string; externalUrl: string } }
+  | { ok: true; data: { id: string | null; playlistName: string; externalUrl: string } }
   | { ok: false; error: PlaylistErrorCode; message?: string; retryAfterSeconds?: number };

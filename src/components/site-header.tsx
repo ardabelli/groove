@@ -16,9 +16,20 @@ export function SiteHeader() {
 
   return (
     <header className="flex items-center justify-between sticky top-0 z-20 border-b bg-background/70 px-6 py-4 backdrop-blur-md">
-      <Link href="/" className="font-heading text-lg font-semibold tracking-tight transition-colors hover:text-primary">
-        Groove
-      </Link>
+      <div className="flex items-center gap-6">
+        <Link
+          href="/"
+          className="font-heading text-lg font-semibold tracking-tight transition-colors hover:text-primary"
+        >
+          Groove
+        </Link>
+        <Link
+          href="/#community"
+          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Social
+        </Link>
+      </div>
       {me?.authenticated && me.user ? (
         <div className="flex items-center gap-3">
           <Avatar size="sm">

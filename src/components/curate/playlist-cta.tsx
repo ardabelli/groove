@@ -2,25 +2,39 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, Loader2, ArrowUpRight } from "lucide-react";
+import { Check, Loader2, ArrowUpRight, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { BACKEND_URL } from "@/lib/backend";
-import type { CreatePlaylistResult } from "@/lib/types";
+import type { CreatePlaylistResult, ShareResult, MoodParameters, TrackDTO } from "@/lib/types";
 
-async function createGroovePlaylist(
-  playlistTitle: string,
-  playlistDescription: string,
-  trackUris: string[]
-): Promise<CreatePlaylistResult> {
+async function createGroovePlaylist(body: {
+  playlistTitle: string;
+  playlistDescription: string;
+  curatorNote: string;
+  moodParameters: MoodParameters;
+  tracks: TrackDTO[];
+}): Promise<CreatePlaylistResult> {
   try {
     const res = await fetch(`${BACKEND_URL}/api/playlist`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playlistTitle, playlistDescription, trackUris }),
+      body: JSON.stringify(body),
     });
     return (await res.json()) as CreatePlaylistResult;
+  } catch {
+    return { ok: false, error: "unknown" };
+  }
+}
+
+async function sharePlaylistToGroove(id: string): Promise<ShareResult> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/playlist/${id}/share`, {
+      method: "POST",
+      credentials: "include",
+    });
+    return (await res.json()) as ShareResult;
   } catch {
     return { ok: false, error: "unknown" };
   }
@@ -29,18 +43,32 @@ async function createGroovePlaylist(
 export function PlaylistCta({
   playlistTitle,
   playlistDescription,
-  trackUris,
+  curatorNote,
+  moodParameters,
+  tracks,
 }: {
   playlistTitle: string;
   playlistDescription: string;
-  trackUris: string[];
+  curatorNote: string;
+  moodParameters: MoodParameters;
+  tracks: TrackDTO[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [created, setCreated] = useState<{ playlistName: string; externalUrl: string } | null>(null);
+  const [isSharing, startSharing] = useTransition();
+  const [created, setCreated] = useState<{ id: string | null; playlistName: string; externalUrl: string } | null>(
+    null
+  );
+  const [shared, setShared] = useState(false);
 
   function handleCreate() {
     startTransition(async () => {
-      const result = await createGroovePlaylist(playlistTitle, playlistDescription, trackUris);
+      const result = await createGroovePlaylist({
+        playlistTitle,
+        playlistDescription,
+        curatorNote,
+        moodParameters,
+        tracks,
+      });
       if (result.ok) {
         setCreated(result.data);
         toast.success(`Created "${result.data.playlistName}" in Spotify`);
@@ -54,9 +82,24 @@ export function PlaylistCta({
     });
   }
 
+  function handleShare() {
+    if (!created?.id) return;
+    startSharing(async () => {
+      const result = await sharePlaylistToGroove(created.id!);
+      if (result.ok) {
+        setShared(true);
+        toast.success("Shared to the Groove social feed");
+      } else if (result.error === "unauthenticated") {
+        toast.error("Your session expired — please sign in again.");
+      } else {
+        toast.error("Couldn't share this playlist. Please try again.");
+      }
+    });
+  }
+
   if (created) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           size="lg"
           nativeButton={false}
@@ -67,11 +110,27 @@ export function PlaylistCta({
           Open in Spotify
           <ArrowUpRight className="size-3.5" />
         </Button>
+        {created.id && !shared && (
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={handleShare}
+            disabled={isSharing}
+            className="rounded-full"
+          >
+            {isSharing ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-3.5" />}
+            Share to Groove
+          </Button>
+        )}
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <div className="flex size-4 items-center justify-center rounded-full bg-primary/15">
             <Check className="size-2.5 text-primary" />
           </div>
-          Created &quot;{created.playlistName}&quot;
+          {shared ? (
+            <>Shared &quot;{created.playlistName}&quot; to Groove</>
+          ) : (
+            <>Created &quot;{created.playlistName}&quot;</>
+          )}
         </div>
       </div>
     );
