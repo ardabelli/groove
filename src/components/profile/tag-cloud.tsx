@@ -63,19 +63,25 @@ export function TagCloud({ playlists }: { playlists: PlaylistSummaryDTO[] }) {
         return (
           <div
             key={tag.label}
-            title={`${tag.label} · ${tag.count} playlist${tag.count === 1 ? "" : "s"}`}
-            className={`flex shrink-0 items-center justify-center rounded-full border text-center leading-tight font-medium ${BUBBLE_COLORS[index % BUBBLE_COLORS.length]}`}
-            style={
-              {
-                width: size,
-                height: size,
-                fontSize,
-                animation: `tag-bubble-float ${duration}s ease-in-out ${delay}s infinite`,
-                "--bubble-drift": `-${drift}px`,
-              } as CSSProperties
-            }
+            className="group/bubble relative shrink-0 transition-transform duration-200 ease-out hover:z-10 hover:scale-[1.15]"
+            style={{ width: size, height: size }}
           >
-            <span className="px-2">{tag.label}</span>
+            <div
+              aria-label={`${tag.label} · ${tag.count} playlist${tag.count === 1 ? "" : "s"}`}
+              className={`flex h-full w-full items-center justify-center rounded-full border text-center leading-tight font-medium ${BUBBLE_COLORS[index % BUBBLE_COLORS.length]}`}
+              style={
+                {
+                  fontSize,
+                  animation: `tag-bubble-float ${duration}s ease-in-out ${delay}s infinite`,
+                  "--bubble-drift": `-${drift}px`,
+                } as CSSProperties
+              }
+            >
+              <span className="px-2">{tag.label}</span>
+            </div>
+            <div className="pointer-events-none absolute -top-2 left-1/2 z-20 -translate-x-1/2 -translate-y-full scale-90 rounded-md bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground opacity-0 shadow-md transition-all duration-150 group-hover/bubble:scale-100 group-hover/bubble:opacity-100">
+              {tag.count} playlist{tag.count === 1 ? "" : "s"}
+            </div>
           </div>
         );
       })}

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { ArrowUpRight, Loader2, X } from "lucide-react";
+import { ArrowUpRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -10,9 +10,9 @@ import { SpotifyIcon } from "@/components/spotify-icon";
 import { BACKEND_URL } from "@/lib/backend";
 import type { PlaylistSummaryDTO, ShareResult } from "@/lib/types";
 
-async function unsharePlaylist(id: string): Promise<ShareResult> {
+async function setPlaylistShared(id: string, shared: boolean): Promise<ShareResult> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/playlist/${id}/unshare`, {
+    const res = await fetch(`${BACKEND_URL}/api/playlist/${id}/${shared ? "share" : "unshare"}`, {
       method: "POST",
       credentials: "include",
     });
@@ -24,21 +24,22 @@ async function unsharePlaylist(id: string): Promise<ShareResult> {
 
 function PlaylistRow({
   playlist,
-  onUnshared,
+  onSharedChange,
 }: {
   playlist: PlaylistSummaryDTO;
-  onUnshared: (id: string) => void;
+  onSharedChange: (id: string, isShared: boolean) => void;
 }) {
   const [isPending, startTransition] = useTransition();
 
-  function handleUnshare() {
+  function handleToggleShared() {
+    const nextShared = !playlist.isShared;
     startTransition(async () => {
-      const result = await unsharePlaylist(playlist.id);
+      const result = await setPlaylistShared(playlist.id, nextShared);
       if (result.ok) {
-        onUnshared(playlist.id);
-        toast.success("Removed from the Groove social feed");
+        onSharedChange(playlist.id, nextShared);
+        toast.success(nextShared ? "Shared to the Groove social feed" : "Removed from the Groove social feed");
       } else {
-        toast.error("Couldn't remove this playlist from social. Please try again.");
+        toast.error("Couldn't update sharing for this playlist. Please try again.");
       }
     });
   }
@@ -48,8 +49,20 @@ function PlaylistRow({
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-heading text-base font-semibold tracking-tight">{playlist.title}</h3>
-          <Badge variant={playlist.isShared ? "default" : "outline"} className="shrink-0">
-            {playlist.isShared ? "Shared" : "Private"}
+          <Badge
+            variant={playlist.isShared ? "default" : "outline"}
+            className="shrink-0 cursor-pointer transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+            render={
+              <button
+                type="button"
+                onClick={handleToggleShared}
+                disabled={isPending}
+                aria-label={playlist.isShared ? "Stop sharing this playlist" : "Share this playlist"}
+              />
+            }
+          >
+            {isPending ? <Loader2 className="size-3 animate-spin" /> : null}
+            {playlist.isShared ? "Shared" : "Not shared"}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">{playlist.description}</p>
@@ -69,31 +82,17 @@ function PlaylistRow({
           <span className="text-xs text-muted-foreground">
             {playlist.trackCount} track{playlist.trackCount === 1 ? "" : "s"}
           </span>
-          <div className="flex items-center gap-2">
-            {playlist.isShared && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleUnshare}
-                disabled={isPending}
-                className="text-muted-foreground"
-              >
-                {isPending ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
-                Remove from social
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              nativeButton={false}
-              className="rounded-full"
-              render={<a href={playlist.spotifyUrl} target="_blank" rel="noopener noreferrer" />}
-            >
-              <SpotifyIcon size={12} />
-              Open in Spotify
-              <ArrowUpRight className="size-3" />
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            nativeButton={false}
+            className="rounded-full"
+            render={<a href={playlist.spotifyUrl} target="_blank" rel="noopener noreferrer" />}
+          >
+            <SpotifyIcon size={12} />
+            Open in Spotify
+            <ArrowUpRight className="size-3" />
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -117,8 +116,8 @@ export function MyPlaylists({ playlists }: { playlists: PlaylistSummaryDTO[] }) 
         <PlaylistRow
           key={playlist.id}
           playlist={playlist}
-          onUnshared={(id) =>
-            setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isShared: false } : p)))
+          onSharedChange={(id, isShared) =>
+            setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isShared } : p)))
           }
         />
       ))}

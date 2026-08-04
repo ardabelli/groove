@@ -5,10 +5,17 @@ import { Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SignInButton } from "@/components/sign-in-button";
 import { MyPlaylists } from "@/components/profile/my-playlists";
+import { ProfileNav, type ProfileSection } from "@/components/profile/profile-nav";
 import { PromptHistory } from "@/components/profile/prompt-history";
 import { TagCloud } from "@/components/profile/tag-cloud";
 import { BACKEND_URL, fetchMe, type MeResponse } from "@/lib/backend";
 import type { PlaylistSummaryDTO, PromptHistoryDTO, PromptListResult, SocialListResult } from "@/lib/types";
+
+const PROFILE_SECTIONS: ProfileSection[] = [
+  { id: "top-vibes", label: "Top vibes" },
+  { id: "your-playlists", label: "Your playlists" },
+  { id: "prompt-history", label: "Prompt history" },
+];
 
 async function fetchMyPlaylists(): Promise<SocialListResult> {
   try {
@@ -67,29 +74,35 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-12 px-5 pt-16 pb-24 sm:px-6">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <Avatar size="lg">
-          <AvatarImage src={me.user.imageUrl ?? undefined} alt={me.user.displayName ?? "User"} />
-          <AvatarFallback>{me.user.displayName?.[0] ?? "U"}</AvatarFallback>
-        </Avatar>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">{me.user.displayName}</h1>
+    <div className="relative mx-auto w-full max-w-3xl flex-1 px-5 pt-16 pb-24 sm:px-6">
+      <aside className="fixed top-24 left-6 hidden w-40 md:block lg:left-12 xl:left-24">
+        <ProfileNav sections={PROFILE_SECTIONS} />
+      </aside>
+
+      <div className="flex flex-col gap-12">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Avatar size="lg">
+            <AvatarImage src={me.user.imageUrl ?? undefined} alt={me.user.displayName ?? "User"} />
+            <AvatarFallback>{me.user.displayName?.[0] ?? "U"}</AvatarFallback>
+          </Avatar>
+          <h1 className="font-heading text-2xl font-bold tracking-tight">{me.user.displayName}</h1>
+        </div>
+
+        <section id="top-vibes" className="flex scroll-mt-24 flex-col gap-2">
+          <h2 className="font-heading text-xl font-semibold tracking-tight">Your top vibes</h2>
+          <TagCloud playlists={playlists} />
+        </section>
+
+        <section id="your-playlists" className="flex scroll-mt-24 flex-col gap-4">
+          <h2 className="font-heading text-xl font-semibold tracking-tight">Your playlists</h2>
+          <MyPlaylists playlists={playlists} />
+        </section>
+
+        <section id="prompt-history" className="flex scroll-mt-24 flex-col gap-4">
+          <h2 className="font-heading text-xl font-semibold tracking-tight">Prompt history</h2>
+          <PromptHistory prompts={prompts} />
+        </section>
       </div>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="font-heading text-xl font-semibold tracking-tight">Your top vibes</h2>
-        <TagCloud playlists={playlists} />
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-xl font-semibold tracking-tight">Your playlists</h2>
-        <MyPlaylists playlists={playlists} />
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-xl font-semibold tracking-tight">Prompt history</h2>
-        <PromptHistory prompts={prompts} />
-      </section>
     </div>
   );
 }
