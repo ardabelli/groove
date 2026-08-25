@@ -1,6 +1,11 @@
 import type { AdCompleteResult, AdStartResult, CreditsResult } from "./types";
 
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000";
+// Empty on purpose: /api/* is proxied to the Express backend via the rewrite in
+// next.config.ts, so every call in this file (and every direct backend link
+// elsewhere, e.g. the Spotify sign-in button) stays same-origin. That keeps the
+// backend's session cookie first-party from the browser's point of view — a
+// cross-origin cookie is blocked by Safari always, and by Chrome increasingly.
+export const BACKEND_URL = "";
 
 export interface MeResponse {
   authenticated: boolean;

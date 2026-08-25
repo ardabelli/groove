@@ -15,6 +15,8 @@ Two separate apps that talk over HTTP — not a single Next.js monorepo with API
 
 The frontend never talks to Spotify or Groq directly; it calls the backend, which holds the Spotify access/refresh tokens in a signed session cookie (`groove_session`, JWT via `jsonwebtoken`) and proxies everything.
 
+Browser requests to `/api/*` never hit the backend's origin directly — `next.config.ts` rewrites them to `NEXT_PUBLIC_BACKEND_URL` (used server-side here, not just inlined client-side) so the browser only ever sees the frontend's own origin. This is required in production, where the frontend and backend are deployed to different domains: a session cookie set by a directly-called backend origin is cross-site from the browser's page, which Safari always blocks and other browsers increasingly do too. Consequently the Spotify redirect URI must point at the **frontend's** `/api/auth/callback` (proxied through), not the backend's origin directly — see Auth below.
+
 ### Request flow: curating a playlist
 
 1. User submits a vibe string from `src/components/curate/vibe-form.tsx`.
@@ -28,7 +30,7 @@ The frontend never talks to Spotify or Groq directly; it calls the backend, whic
 ### Auth
 
 Spotify OAuth (Authorization Code flow), handled entirely by the backend (`backend/src/routes/auth.ts`, `backend/src/lib/session.ts`):
-- Redirect URI: `http://127.0.0.1:8000/api/auth/callback` (must match the Spotify Developer Dashboard app config exactly).
+- Redirect URI (`SPOTIFY_REDIRECT_URI` on the backend): locally `http://127.0.0.1:8000/api/auth/callback`; in production the **frontend's** origin, e.g. `https://<frontend-domain>/api/auth/callback`, since it goes through the `/api/*` rewrite (see Architecture above) so the session cookie ends up first-party. Must match the Spotify Developer Dashboard app config exactly in both cases.
 - On success, backend signs a JWT session cookie containing `userId`, Spotify `accessToken`/`refreshToken`, and `expiresAt`.
 - `getAuthContext()` transparently refreshes the Spotify access token when it's within 60s of expiry and re-issues the cookie; throws `AuthError` (→ caller should treat as unauthenticated) if refresh fails.
 - No separate frontend auth/session library — the cookie is the only source of truth, read only on the backend.
