@@ -35,10 +35,11 @@ Spotify OAuth (Authorization Code flow), handled entirely by the backend (`backe
 
 ### Data model (Postgres via Drizzle, `backend/src/db/schema.ts`)
 
-- `users` — Spotify identity (`id`, `email`, `displayName`, `imageUrl`).
+- `users` — Spotify identity (`id`, `email`, `displayName`, `imageUrl`) plus `credits`, the prompt-credit balance gating `/api/curate` (new users start with `FREE_CREDITS`, see `backend/src/lib/credits/types.ts`).
 - `playlists` — one row per curated playlist: owner, title/description/curatorNote, `moodParameters` (jsonb), `tracks` (jsonb `TrackDTO[]`), Spotify playlist id/url, `isShared`/`sharedAt`/`likeCount` for the social feed. Indexed for owner lookups and the shared feed (by recency and by popularity).
 - `promptHistory` — every vibe string a user has submitted, for their profile page.
 - `playlistLikes` — join table, composite PK `(playlistId, userId)`.
+- `adRewards` — one row per rewarded-ad token issued by `/api/credits/ad/start`, redeemed once by `/api/credits/ad/complete` to add a credit (short TTL, single-use, enforced atomically in `db/ads.ts`).
 
 DB access is grouped by table in `backend/src/db/{users,playlists,prompts}.ts`; connection/client setup in `backend/src/db/index.ts` (Neon serverless Postgres). Migrations are Drizzle-generated SQL in `backend/drizzle/`.
 
@@ -51,6 +52,7 @@ DB access is grouped by table in `backend/src/db/{users,playlists,prompts}.ts`; 
 | `/api/playlist` | Create the playlist in Spotify + persist it |
 | `/api/social` | Shared feed, like/unlike |
 | `/api/prompts` | Prompt history, delete |
+| `/api/credits` | Prompt credit balance; earn credits via rewarded ad |
 
 ### Frontend structure (`src/`)
 

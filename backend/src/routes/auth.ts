@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getMe } from "../lib/spotify/profile";
-import { upsertUser } from "../db/users";
+import { getUserById, upsertUser } from "../db/users";
 import {
   clearSessionCookie,
   getSessionUser,
@@ -117,11 +117,13 @@ authRouter.post("/logout", (_req, res) => {
   res.status(200).json({ ok: true });
 });
 
-authRouter.get("/me", (req, res) => {
+authRouter.get("/me", async (req, res) => {
   const user = getSessionUser(req);
   if (!user) {
     res.json({ authenticated: false });
     return;
   }
-  res.json({ authenticated: true, user });
+
+  const dbUser = await getUserById(user.id);
+  res.json({ authenticated: true, user: { ...user, credits: dbUser?.credits ?? 0 } });
 });

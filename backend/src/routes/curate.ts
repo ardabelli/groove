@@ -7,6 +7,7 @@ import { buildTasteProfile } from "../lib/agent/taste-profile";
 import { runCurator, AgentError } from "../lib/agent/curator";
 import { buildTracklist } from "../lib/agent/build-tracklist";
 import { createPromptRecord } from "../db/prompts";
+import { spendCredit } from "../db/users";
 import type { CurateResult, TrackDTO } from "../lib/agent/types";
 
 const VibeSchema = z.string().trim().min(3, "Tell me a bit more about the vibe.").max(300);
@@ -70,6 +71,14 @@ curateRouter.post("/", async (req, res) => {
   }
   const vibe = parsedVibe.data;
 
+  // Each curate attempt costs real LLM token spend once it reaches the agent, so the
+  // credit is spent up front for the attempt rather than only on a successful result.
+  const creditsRemaining = await spendCredit(userId);
+  if (creditsRemaining === null) {
+    res.json({ ok: false, error: "insufficient_credits" } satisfies CurateResult);
+    return;
+  }
+
   try {
     await createPromptRecord({ userId, vibe });
   } catch (dbErr) {
@@ -97,6 +106,7 @@ curateRouter.post("/", async (req, res) => {
         moodParameters: curatorResponse.mood_parameters,
         usedPersonalization: !tasteProfile.empty,
         tracks: tracks.map(toTrackDTO),
+        creditsRemaining,
       },
     } satisfies CurateResult);
   } catch (err) {

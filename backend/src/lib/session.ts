@@ -20,19 +20,27 @@ function getSecret(): string {
   return secret;
 }
 
+// In production the frontend and backend live on different domains, so the cookie
+// must be SameSite=None (which browsers only honor when Secure is also set); locally
+// over plain http://127.0.0.1 that combination is rejected, so lax/insecure stays for dev.
+const isProduction = process.env.NODE_ENV === "production";
+const cookieOptions = {
+  httpOnly: true as const,
+  sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
+  secure: isProduction,
+  path: "/",
+};
+
 export function signSessionCookie(res: Response, payload: SessionPayload) {
   const token = jwt.sign(payload, getSecret(), { expiresIn: "30d" });
   res.cookie(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    ...cookieOptions,
     maxAge: 30 * 24 * 60 * 60 * 1000,
-    path: "/",
   });
 }
 
 export function clearSessionCookie(res: Response) {
-  res.clearCookie(SESSION_COOKIE_NAME, { path: "/" });
+  res.clearCookie(SESSION_COOKIE_NAME, { path: cookieOptions.path });
 }
 
 function readSessionPayload(req: Request): SessionPayload | null {

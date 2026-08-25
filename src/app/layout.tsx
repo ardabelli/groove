@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
+import { BannerAd } from "@/components/ads/banner-ad";
 import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
@@ -48,6 +49,7 @@ export default function RootLayout({
         <div className="fixed inset-0 -z-10 bg-background/60" />
         <SiteHeader />
         {children}
+        <BannerAd />
         <Toaster theme="dark" />
       </body>
     </html>
