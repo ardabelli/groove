@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { BannerAd } from "@/components/ads/banner-ad";
 import { Toaster } from "@/components/ui/sonner";
+
+const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
 const inter = Inter({
   variable: "--font-sans",
@@ -35,6 +38,14 @@ export default function RootLayout({
       lang="en"
       className={`dark ${inter.variable} ${bricolageGrotesque.variable} ${geistMono.variable} h-full antialiased`}
     >
+      {ADSENSE_CLIENT_ID && (
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+          crossOrigin="anonymous"
+          strategy="beforeInteractive"
+        />
+      )}
       <body className="min-h-full flex flex-col relative">
         <video
           autoPlay
