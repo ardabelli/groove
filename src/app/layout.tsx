@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter, Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
@@ -39,12 +38,17 @@ export default function RootLayout({
       className={`dark ${inter.variable} ${bricolageGrotesque.variable} ${geistMono.variable} h-full antialiased`}
     >
       {ADSENSE_CLIENT_ID && (
-        <Script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
-          crossOrigin="anonymous"
-          strategy="beforeInteractive"
-        />
+        // Google's site-verification crawler reads the raw server HTML without running
+        // JS, so this must be a literal <script> tag rather than next/script (which, for
+        // App Router's beforeInteractive strategy, only emits a <link rel="preload"> in
+        // the server HTML and inserts the real tag client-side before hydration).
+        <head>
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+            crossOrigin="anonymous"
+          />
+        </head>
       )}
       <body className="min-h-full flex flex-col relative">
         <video
