@@ -20,6 +20,7 @@ async function fetchSocialList(path: string): Promise<SocialListResult> {
 
 export function SocialFeed() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [popular, setPopular] = useState<PlaylistSummaryDTO[] | null>(null);
   const [feed, setFeed] = useState<PlaylistSummaryDTO[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -27,7 +28,10 @@ export function SocialFeed() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => {
-    fetchMe().then((me) => setIsAuthenticated(me.authenticated));
+    fetchMe().then((me) => {
+      setIsAuthenticated(me.authenticated);
+      setIsAdmin(me.authenticated && (me.user?.isAdmin ?? false));
+    });
 
     Promise.all([
       fetchSocialList(`/api/social/popular?limit=6`),
@@ -41,6 +45,11 @@ export function SocialFeed() {
       setIsInitialLoading(false);
     });
   }, []);
+
+  function handleRemoved(id: string) {
+    setPopular((prev) => prev && prev.filter((p) => p.id !== id));
+    setFeed((prev) => prev.filter((p) => p.id !== id));
+  }
 
   function handleLoadMore() {
     setIsLoadingMore(true);
@@ -68,7 +77,13 @@ export function SocialFeed() {
           <h2 className="font-heading text-xl font-semibold tracking-tight">Popular playlists</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {popular.map((playlist) => (
-              <PlaylistCard key={playlist.id} playlist={playlist} isAuthenticated={isAuthenticated} />
+              <PlaylistCard
+                key={playlist.id}
+                playlist={playlist}
+                isAuthenticated={isAuthenticated}
+                isAdmin={isAdmin}
+                onRemoved={handleRemoved}
+              />
             ))}
           </div>
         </section>
@@ -83,7 +98,13 @@ export function SocialFeed() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {feed.map((playlist) => (
-              <PlaylistCard key={playlist.id} playlist={playlist} isAuthenticated={isAuthenticated} />
+              <PlaylistCard
+                key={playlist.id}
+                playlist={playlist}
+                isAuthenticated={isAuthenticated}
+                isAdmin={isAdmin}
+                onRemoved={handleRemoved}
+              />
             ))}
           </div>
         )}

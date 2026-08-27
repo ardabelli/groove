@@ -36,6 +36,13 @@
       "when": 1787129022385,
       "tag": "0004_lumpy_misty_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787824408663,
+      "tag": "0005_stiff_miracleman",
+      "breakpoints": true
     }
   ]
 }

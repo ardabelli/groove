@@ -33,6 +33,11 @@ export function SiteHeader() {
               <AvatarFallback>{me.user.displayName?.[0] ?? "U"}</AvatarFallback>
             </Avatar>
             <span className="text-sm text-muted-foreground">{me.user.displayName}</span>
+            {me.user.isAdmin && (
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                Admin
+              </span>
+            )}
           </Link>
           <SignOutButton />
         </div>

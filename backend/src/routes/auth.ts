@@ -125,5 +125,8 @@ authRouter.get("/me", async (req, res) => {
   }
 
   const dbUser = await getUserById(user.id);
-  res.json({ authenticated: true, user: { ...user, credits: dbUser?.credits ?? 0 } });
+  res.json({
+    authenticated: true,
+    user: { ...user, credits: dbUser?.credits ?? 0, isAdmin: dbUser?.isAdmin ?? false },
+  });
 });

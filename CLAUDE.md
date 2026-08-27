@@ -37,7 +37,7 @@ Spotify OAuth (Authorization Code flow), handled entirely by the backend (`backe
 
 ### Data model (Postgres via Drizzle, `backend/src/db/schema.ts`)
 
-- `users` — Spotify identity (`id`, `email`, `displayName`, `imageUrl`) plus `credits`, the prompt-credit balance gating `/api/curate` (new users start with `FREE_CREDITS`, see `backend/src/lib/credits/types.ts`).
+- `users` — Spotify identity (`id`, `email`, `displayName`, `imageUrl`) plus `credits`, the prompt-credit balance gating `/api/curate` (new users start with `FREE_CREDITS`, see `backend/src/lib/credits/types.ts`), and `isAdmin` — auto-promoted on login for Spotify account IDs listed in `ADMIN_SPOTIFY_IDS` (`backend/src/db/users.ts`, one-way promotion). Admins bypass credit spend entirely in `/api/curate` and can unshare any user's playlist from the social feed via `/api/playlist/:id/unshare` (normally owner-only).
 - `playlists` — one row per curated playlist: owner, title/description/curatorNote, `moodParameters` (jsonb), `tracks` (jsonb `TrackDTO[]`), Spotify playlist id/url, `isShared`/`sharedAt`/`likeCount` for the social feed. Indexed for owner lookups and the shared feed (by recency and by popularity).
 - `promptHistory` — every vibe string a user has submitted, for their profile page.
 - `playlistLikes` — join table, composite PK `(playlistId, userId)`.
@@ -74,7 +74,7 @@ Backend responses and frontend API calls use a discriminated union `{ ok: true, 
 
 Frontend `.env.local`: `NEXT_PUBLIC_BACKEND_URL` (backend origin).
 
-Backend `.env`: `PORT`, `FRONTEND_URL`, `AUTH_SPOTIFY_ID`, `AUTH_SPOTIFY_SECRET`, `SPOTIFY_REDIRECT_URI`, `SESSION_SECRET` (`openssl rand -base64 32`), `GROQ_API_KEY`, `DATABASE_URL` (Neon).
+Backend `.env`: `PORT`, `FRONTEND_URL`, `AUTH_SPOTIFY_ID`, `AUTH_SPOTIFY_SECRET`, `SPOTIFY_REDIRECT_URI`, `SESSION_SECRET` (`openssl rand -base64 32`), `GROQ_API_KEY`, `DATABASE_URL` (Neon), `ADMIN_SPOTIFY_IDS` (comma-separated, optional).
 
 ## Commands
 

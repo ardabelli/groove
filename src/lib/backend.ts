@@ -14,6 +14,7 @@ export interface MeResponse {
     displayName: string | null;
     imageUrl: string | null;
     credits: number;
+    isAdmin: boolean;
   };
 }
 

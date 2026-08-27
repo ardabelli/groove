@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   displayName: text("display_name"),
   imageUrl: text("image_url"),
   credits: integer("credits").notNull().default(FREE_CREDITS),
+  isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

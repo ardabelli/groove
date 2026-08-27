@@ -24,6 +24,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 export function VibeForm({ initialVibe }: { initialVibe?: string }) {
   const [vibe, setVibe] = useState(initialVibe ?? "");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
   const [adModalOpen, setAdModalOpen] = useState(false);
 
@@ -32,6 +33,7 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
       setIsAuthenticated(me.authenticated);
       if (me.authenticated && me.user) {
         setCredits(me.user.credits);
+        setIsAdmin(me.user.isAdmin);
       }
     });
   }, []);
@@ -74,7 +76,7 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
     }
   }, [state]);
 
-  const outOfCredits = isAuthenticated && credits !== null && credits <= 0;
+  const outOfCredits = !isAdmin && isAuthenticated && credits !== null && credits <= 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -124,7 +126,7 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
                   : "Sign in & curate my set"}
             </Button>
           )}
-          {isAuthenticated && credits !== null && !outOfCredits && (
+          {!isAdmin && isAuthenticated && credits !== null && !outOfCredits && (
             <span className="flex items-center gap-2 text-xs text-muted-foreground">
               {credits} {credits === 1 ? "prompt" : "prompts"} left
               <button

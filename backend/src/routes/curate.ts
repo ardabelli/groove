@@ -7,7 +7,7 @@ import { buildTasteProfile } from "../lib/agent/taste-profile";
 import { runCurator, AgentError } from "../lib/agent/curator";
 import { buildTracklist } from "../lib/agent/build-tracklist";
 import { createPromptRecord } from "../db/prompts";
-import { spendCredit } from "../db/users";
+import { getUserById, spendCredit } from "../db/users";
 import type { CurateResult, TrackDTO } from "../lib/agent/types";
 
 const VibeSchema = z.string().trim().min(3, "Tell me a bit more about the vibe.").max(300);
@@ -71,12 +71,20 @@ curateRouter.post("/", async (req, res) => {
   }
   const vibe = parsedVibe.data;
 
+  const dbUser = await getUserById(userId);
+  const isAdmin = dbUser?.isAdmin ?? false;
+
   // Each curate attempt costs real LLM token spend once it reaches the agent, so the
   // credit is spent up front for the attempt rather than only on a successful result.
-  const creditsRemaining = await spendCredit(userId);
-  if (creditsRemaining === null) {
-    res.json({ ok: false, error: "insufficient_credits" } satisfies CurateResult);
-    return;
+  // Admins have unlimited prompts and never touch their credit balance.
+  let creditsRemaining = dbUser?.credits ?? 0;
+  if (!isAdmin) {
+    const remaining = await spendCredit(userId);
+    if (remaining === null) {
+      res.json({ ok: false, error: "insufficient_credits" } satisfies CurateResult);
+      return;
+    }
+    creditsRemaining = remaining;
   }
 
   try {

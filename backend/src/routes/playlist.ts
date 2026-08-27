@@ -3,11 +3,13 @@ import { z } from "zod";
 import { AuthError, getAuthContext, getSessionUser } from "../lib/session";
 import { createPlaylist, addTracksToPlaylist } from "../lib/spotify/playlists";
 import { SpotifyRateLimitError } from "../lib/spotify/errors";
+import { getUserById } from "../db/users";
 import {
   createPlaylistRecord,
   getPlaylistById,
   sharePlaylist,
   unsharePlaylist,
+  adminUnsharePlaylist,
   toggleLike,
 } from "../db/playlists";
 import type { CreatePlaylistResult } from "../lib/agent/types";
@@ -164,12 +166,19 @@ playlistRouter.post("/:id/unshare", async (req, res) => {
       res.json({ ok: false, error: "not_found" } satisfies ShareResult);
       return;
     }
-    if (existing.ownerId !== user.id) {
-      res.json({ ok: false, error: "forbidden" } satisfies ShareResult);
-      return;
+
+    const isOwner = existing.ownerId === user.id;
+    if (!isOwner) {
+      const dbUser = await getUserById(user.id);
+      if (!dbUser?.isAdmin) {
+        res.json({ ok: false, error: "forbidden" } satisfies ShareResult);
+        return;
+      }
     }
 
-    const unshared = await unsharePlaylist(id, user.id);
+    // Admins moderating someone else's shared playlist bypass the ownership check;
+    // owners removing their own playlist from the feed go through the normal path.
+    const unshared = isOwner ? await unsharePlaylist(id, user.id) : await adminUnsharePlaylist(id);
     if (!unshared) {
       res.json({ ok: false, error: "unknown" } satisfies ShareResult);
       return;

@@ -64,6 +64,16 @@ export async function unsharePlaylist(id: string, ownerId: string) {
   return row ?? null;
 }
 
+/** Moderation action: removes any playlist from the social feed regardless of owner. */
+export async function adminUnsharePlaylist(id: string) {
+  const [row] = await db
+    .update(playlists)
+    .set({ isShared: false })
+    .where(eq(playlists.id, id))
+    .returning();
+  return row ?? null;
+}
+
 const ownerSelection = {
   id: users.id,
   displayName: users.displayName,
