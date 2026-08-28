@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
 
 export const SESSION_COOKIE_NAME = "groove_session";
+export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 interface SessionPayload {
   userId: string;
@@ -31,11 +32,14 @@ const cookieOptions = {
   path: "/",
 };
 
+export function createSessionToken(payload: SessionPayload): string {
+  return jwt.sign(payload, getSecret(), { expiresIn: SESSION_MAX_AGE_SECONDS });
+}
+
 export function signSessionCookie(res: Response, payload: SessionPayload) {
-  const token = jwt.sign(payload, getSecret(), { expiresIn: "30d" });
-  res.cookie(SESSION_COOKIE_NAME, token, {
+  res.cookie(SESSION_COOKIE_NAME, createSessionToken(payload), {
     ...cookieOptions,
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+    maxAge: SESSION_MAX_AGE_SECONDS * 1000,
   });
 }
 

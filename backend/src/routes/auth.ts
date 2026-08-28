@@ -3,8 +3,9 @@ import { getMe } from "../lib/spotify/profile";
 import { getUserById, upsertUser } from "../db/users";
 import {
   clearSessionCookie,
+  createSessionToken,
   getSessionUser,
-  signSessionCookie,
+  SESSION_MAX_AGE_SECONDS,
   type SessionPayload,
 } from "../lib/session";
 
@@ -21,15 +22,6 @@ function redirectUri() {
 
 function encodeState(vibe: string | undefined) {
   return Buffer.from(JSON.stringify({ vibe: vibe ?? "" })).toString("base64url");
-}
-
-function decodeState(state: string | undefined): { vibe: string } {
-  if (!state) return { vibe: "" };
-  try {
-    return JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
-  } catch {
-    return { vibe: "" };
-  }
 }
 
 export const authRouter = Router();
@@ -49,13 +41,23 @@ authRouter.get("/login", (req, res) => {
   res.redirect(`https://accounts.spotify.com/authorize?${params.toString()}`);
 });
 
-authRouter.get("/callback", async (req, res) => {
-  const { code, state, error } = req.query;
-  const { vibe } = decodeState(typeof state === "string" ? state : undefined);
-  const frontendUrl = process.env.FRONTEND_URL!;
+/**
+ * Exchanges a Spotify authorization code for a signed session token.
+ *
+ * Called server-to-server by the frontend's /api/auth/callback route handler,
+ * which then sets the `groove_session` cookie itself — first-party, and without
+ * depending on a Set-Cookie header surviving the /api/* proxy hop (it doesn't,
+ * reliably, on Next 16 / Vercel, which is why login never stuck).
+ *
+ * `redirectUri` must be exactly the value the frontend used when sending the
+ * user to Spotify, since Spotify validates it again on the token exchange.
+ */
+authRouter.post("/exchange", async (req, res) => {
+  const code = typeof req.body?.code === "string" ? req.body.code : null;
+  const redirect = typeof req.body?.redirectUri === "string" ? req.body.redirectUri : redirectUri();
 
-  if (error || typeof code !== "string") {
-    res.redirect(`${frontendUrl}/?authError=1`);
+  if (!code) {
+    res.status(400).json({ ok: false });
     return;
   }
 
@@ -71,7 +73,7 @@ authRouter.get("/callback", async (req, res) => {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: redirectUri(),
+        redirect_uri: redirect,
       }),
     });
 
@@ -102,13 +104,15 @@ authRouter.get("/callback", async (req, res) => {
       refreshToken: tokens.refresh_token,
       expiresAt: Date.now() + tokens.expires_in * 1000,
     };
-    signSessionCookie(res, payload);
 
-    const redirectUrl = vibe ? `${frontendUrl}/?vibe=${encodeURIComponent(vibe)}` : `${frontendUrl}/`;
-    res.redirect(redirectUrl);
+    res.json({
+      ok: true,
+      token: createSessionToken(payload),
+      maxAgeSeconds: SESSION_MAX_AGE_SECONDS,
+    });
   } catch (err) {
-    console.error("[auth/callback]", err);
-    res.redirect(`${frontendUrl}/?authError=1`);
+    console.error("[auth/exchange]", err);
+    res.status(502).json({ ok: false });
   }
 });
 
