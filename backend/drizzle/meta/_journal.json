@@ -50,6 +50,13 @@
       "when": 1788377096959,
       "tag": "0006_clumsy_titania",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788378839516,
+      "tag": "0007_fat_skullbuster",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,6 @@ export interface TrackDTO {
 export type CurateErrorCode =
   | "unauthenticated"
   | "invalid_vibe"
-  | "insufficient_credits"
   | "agent_failed"
   | "no_tracks_found"
   | "spotify_rate_limited"
@@ -28,7 +27,6 @@ export type CurateResult =
         moodParameters: CuratorResponse["mood_parameters"];
         usedPersonalization: boolean;
         tracks: TrackDTO[];
-        creditsRemaining: number;
       };
     }
   | { ok: false; error: CurateErrorCode; message?: string };

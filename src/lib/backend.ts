@@ -1,5 +1,3 @@
-import type { CreditsResult } from "./types";
-
 // Empty on purpose: /api/* is proxied to the Express backend via the rewrite in
 // next.config.ts, so every call in this file (and every direct backend link
 // elsewhere, e.g. the Spotify sign-in button) stays same-origin. That keeps the
@@ -13,7 +11,6 @@ export interface MeResponse {
     id: string;
     displayName: string | null;
     imageUrl: string | null;
-    credits: number;
     isAdmin: boolean;
   };
 }
@@ -24,14 +21,5 @@ export async function fetchMe(): Promise<MeResponse> {
     return (await res.json()) as MeResponse;
   } catch {
     return { authenticated: false };
-  }
-}
-
-export async function fetchCredits(): Promise<CreditsResult> {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/credits`, { credentials: "include" });
-    return (await res.json()) as CreditsResult;
-  } catch {
-    return { ok: false, error: "unknown" };
   }
 }

@@ -13,7 +13,6 @@ import type { CurateResult } from "@/lib/types";
 
 const ERROR_MESSAGES: Record<string, string> = {
   unauthenticated: "Your session expired — please sign in again.",
-  insufficient_credits: "You're out of prompt credits.",
   agent_failed: "The curator agent couldn't come up with a set. Try rephrasing the vibe.",
   no_tracks_found: "Couldn't find matching tracks on Spotify. Try a broader vibe.",
   spotify_rate_limited: "Spotify is rate limiting us right now — try again shortly.",
@@ -23,16 +22,10 @@ const ERROR_MESSAGES: Record<string, string> = {
 export function VibeForm({ initialVibe }: { initialVibe?: string }) {
   const [vibe, setVibe] = useState(initialVibe ?? "");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
     fetchMe().then((me) => {
       setIsAuthenticated(me.authenticated);
-      if (me.authenticated && me.user) {
-        setCredits(me.user.credits);
-        setIsAdmin(me.user.isAdmin);
-      }
     });
   }, []);
 
@@ -54,13 +47,7 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ vibe: submittedVibe }),
       });
-      const result = (await res.json()) as CurateResult;
-      if (result.ok) {
-        setCredits(result.data.creditsRemaining);
-      } else if (result.error === "insufficient_credits") {
-        setCredits(0);
-      }
-      return result;
+      return (await res.json()) as CurateResult;
     } catch {
       return { ok: false, error: "unknown" };
     }
@@ -73,8 +60,6 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
       toast.error(ERROR_MESSAGES[state.error] ?? ERROR_MESSAGES.unknown);
     }
   }, [state]);
-
-  const outOfCredits = !isAdmin && isAuthenticated && credits !== null && credits <= 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -101,7 +86,7 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
         <div className="flex items-center gap-3">
           <Button
             type="submit"
-            disabled={isPending || outOfCredits}
+            disabled={isPending}
             className="self-start rounded-full bg-foreground text-background hover:bg-foreground/90"
           >
             {isPending && <Loader2 className="size-4 animate-spin" />}
@@ -113,13 +98,6 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
                 ? "Curate my set"
                 : "Sign in & curate my set"}
           </Button>
-          {!isAdmin && isAuthenticated && credits !== null && (
-            <span className="text-xs text-muted-foreground">
-              {outOfCredits
-                ? "You're out of prompt credits."
-                : `${credits} ${credits === 1 ? "prompt" : "prompts"} left`}
-            </span>
-          )}
         </div>
       </form>
 

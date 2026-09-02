@@ -2,7 +2,6 @@ import { pgTable, text, timestamp, boolean, integer, jsonb, primaryKey, index } 
 import { randomUUID } from "node:crypto";
 import type { TrackDTO } from "../lib/agent/types";
 import type { CuratorResponse } from "../lib/agent/schema";
-import { FREE_CREDITS } from "../lib/credits/types";
 
 type MoodParameters = CuratorResponse["mood_parameters"];
 
@@ -11,7 +10,6 @@ export const users = pgTable("users", {
   email: text("email"),
   displayName: text("display_name"),
   imageUrl: text("image_url"),
-  credits: integer("credits").notNull().default(FREE_CREDITS),
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

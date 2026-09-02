@@ -39,7 +39,7 @@ Spotify OAuth (Authorization Code flow), handled entirely by the backend (`backe
 
 ### Data model (Postgres via Drizzle, `backend/src/db/schema.ts`)
 
-- `users` — Spotify identity (`id`, `email`, `displayName`, `imageUrl`) plus `credits`, the prompt-credit balance gating `/api/curate` (new users start with `FREE_CREDITS`, see `backend/src/lib/credits/types.ts`), and `isAdmin` — auto-promoted on login for Spotify account IDs listed in `ADMIN_SPOTIFY_IDS` (`backend/src/db/users.ts`, one-way promotion). Admins bypass credit spend entirely in `/api/curate` and can unshare any user's playlist from the social feed via `/api/playlist/:id/unshare` (normally owner-only).
+- `users` — Spotify identity (`id`, `email`, `displayName`, `imageUrl`) plus `isAdmin` — auto-promoted on login for Spotify account IDs listed in `ADMIN_SPOTIFY_IDS` (`backend/src/db/users.ts`, one-way promotion). `/api/curate` is unlimited for every authenticated user; admins can additionally unshare any user's playlist from the social feed via `/api/playlist/:id/unshare` (normally owner-only).
 - `playlists` — one row per curated playlist: owner, title/description/curatorNote, `moodParameters` (jsonb), `tracks` (jsonb `TrackDTO[]`), Spotify playlist id/url, `isShared`/`sharedAt`/`likeCount` for the social feed. Indexed for owner lookups and the shared feed (by recency and by popularity).
 - `promptHistory` — every vibe string a user has submitted, for their profile page.
 - `playlistLikes` — join table, composite PK `(playlistId, userId)`.
@@ -55,7 +55,6 @@ DB access is grouped by table in `backend/src/db/{users,playlists,prompts}.ts`; 
 | `/api/playlist` | Create the playlist in Spotify + persist it |
 | `/api/social` | Shared feed, like/unlike |
 | `/api/prompts` | Prompt history, delete |
-| `/api/credits` | Prompt credit balance |
 
 ### Frontend structure (`src/`)
 

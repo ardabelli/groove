@@ -16,7 +16,6 @@ export interface MoodParameters {
 export type CurateErrorCode =
   | "unauthenticated"
   | "invalid_vibe"
-  | "insufficient_credits"
   | "agent_failed"
   | "no_tracks_found"
   | "spotify_rate_limited"
@@ -32,7 +31,6 @@ export type CurateResult =
         moodParameters: MoodParameters;
         usedPersonalization: boolean;
         tracks: TrackDTO[];
-        creditsRemaining: number;
       };
     }
   | { ok: false; error: CurateErrorCode; message?: string };
@@ -88,7 +86,3 @@ export type PromptListResult =
 export type DeletePromptResult =
   | { ok: true; data: { id: string } }
   | { ok: false; error: "unauthenticated" | "not_found" | "forbidden" | "unknown"; message?: string };
-
-export type CreditsResult =
-  | { ok: true; data: { credits: number } }
-  | { ok: false; error: "unauthenticated" | "unknown"; message?: string };
