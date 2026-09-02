@@ -101,6 +101,7 @@ curateRouter.post("/", async (req, res) => {
     } satisfies CurateResult);
   } catch (err) {
     if (err instanceof AgentError) {
+      console.error("[POST /api/curate] curator agent failed:", err.message);
       res.json({ ok: false, error: "agent_failed", message: err.message } satisfies CurateResult);
       return;
     }

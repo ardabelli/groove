@@ -68,7 +68,14 @@ async function requestCuratorResponse(
     : buildUserPrompt(vibe, tasteProfile);
 
   const text = await generate(SYSTEM_PROMPT, prompt);
-  return CuratorResponseSchema.parse(parseJsonObject(text));
+  try {
+    return CuratorResponseSchema.parse(parseJsonObject(text));
+  } catch (err) {
+    const snippet = text.slice(0, 300).replace(/\s+/g, " ").trim();
+    throw new AgentError(
+      `${err instanceof Error ? err.message : "invalid response"} — model returned: ${snippet || "(empty)"}`
+    );
+  }
 }
 
 export async function runCurator({
