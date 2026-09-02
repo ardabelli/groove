@@ -43,6 +43,13 @@
       "when": 1787824408663,
       "tag": "0005_stiff_miracleman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788377096959,
+      "tag": "0006_clumsy_titania",
+      "breakpoints": true
     }
   ]
 }

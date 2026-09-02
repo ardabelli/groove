@@ -56,12 +56,3 @@ export async function spendCredit(id: string): Promise<number | null> {
     .returning({ credits: users.credits });
   return row?.credits ?? null;
 }
-
-export async function addCredits(id: string, amount: number): Promise<number | null> {
-  const [row] = await db
-    .update(users)
-    .set({ credits: sql`${users.credits} + ${amount}`, updatedAt: new Date() })
-    .where(eq(users.id, id))
-    .returning({ credits: users.credits });
-  return row?.credits ?? null;
-}

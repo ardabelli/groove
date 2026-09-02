@@ -13,7 +13,7 @@ Two separate apps that talk over HTTP — not a single Next.js monorepo with API
 
 **Must use `127.0.0.1`, not `localhost`, for local dev** — the backend's CORS (`FRONTEND_URL`) and Spotify's OAuth redirect URI are pinned to `127.0.0.1`.
 
-The frontend never talks to Spotify or Groq directly; it calls the backend, which holds the Spotify access/refresh tokens in a signed session cookie (`groove_session`, JWT via `jsonwebtoken`) and proxies everything.
+The frontend never talks to Spotify or the LLM provider directly; it calls the backend, which holds the Spotify access/refresh tokens in a signed session cookie (`groove_session`, JWT via `jsonwebtoken`) and proxies everything.
 
 Browser requests to `/api/*` never hit the backend's origin directly — `next.config.ts` rewrites them to `NEXT_PUBLIC_BACKEND_URL` (used server-side here, not just inlined client-side) so the browser only ever sees the frontend's own origin. This is required in production, where the frontend and backend are deployed to different domains: a session cookie set by a directly-called backend origin is cross-site from the browser's page, which Safari always blocks and other browsers increasingly do too. Consequently the Spotify redirect URI must point at the **frontend's** `/api/auth/callback` (proxied through), not the backend's origin directly — see Auth below.
 
@@ -22,7 +22,7 @@ Browser requests to `/api/*` never hit the backend's origin directly — `next.c
 1. User submits a vibe string from `src/components/curate/vibe-form.tsx`.
 2. Frontend calls `POST /api/curate` on the backend.
 3. Backend (`backend/src/routes/curate.ts`) loads the user's Spotify taste profile (`backend/src/lib/agent/taste-profile.ts`, built from `backend/src/lib/spotify/top-items.ts`).
-4. `backend/src/lib/agent/curator.ts` calls Groq (`openai/gpt-oss-120b` via `@ai-sdk/groq`) with a structured-output schema (`backend/src/lib/agent/schema.ts`) to get back a track list, curator note, title/description, and mood parameters. One retry on schema validation failure.
+4. `backend/src/lib/agent/curator.ts` calls the LLM (Vercel AI SDK `generateText` + `Output.object`) with a structured-output schema (`backend/src/lib/agent/schema.ts`) to get back a track list, curator note, title/description, and mood parameters. One retry on schema validation failure. The provider/model is resolved from env in `backend/src/lib/agent/model.ts` (`AI_PROVIDER`, default `openai`; `AI_MODEL`, default `gpt-4o`) — swap providers by installing the matching `@ai-sdk/<name>` package and adding a `case` there.
 5. `backend/src/lib/agent/build-tracklist.ts` resolves each `{artist, title}` pair to a real Spotify track via `backend/src/lib/spotify/search.ts`.
 6. Result flows back as a `CurateResult` (`src/lib/types.ts`) and renders via `curator-note-card.tsx`, `track-list.tsx`, `playlist-cta.tsx`.
 7. Confirming the CTA calls `POST /api/playlist`, which creates the playlist in the user's actual Spotify account (`backend/src/lib/spotify/playlists.ts`) and persists it to the `playlists` table.
@@ -41,7 +41,6 @@ Spotify OAuth (Authorization Code flow), handled entirely by the backend (`backe
 - `playlists` — one row per curated playlist: owner, title/description/curatorNote, `moodParameters` (jsonb), `tracks` (jsonb `TrackDTO[]`), Spotify playlist id/url, `isShared`/`sharedAt`/`likeCount` for the social feed. Indexed for owner lookups and the shared feed (by recency and by popularity).
 - `promptHistory` — every vibe string a user has submitted, for their profile page.
 - `playlistLikes` — join table, composite PK `(playlistId, userId)`.
-- `adRewards` — one row per rewarded-ad token issued by `/api/credits/ad/start`, redeemed once by `/api/credits/ad/complete` to add a credit (short TTL, single-use, enforced atomically in `db/ads.ts`).
 
 DB access is grouped by table in `backend/src/db/{users,playlists,prompts}.ts`; connection/client setup in `backend/src/db/index.ts` (Neon serverless Postgres). Migrations are Drizzle-generated SQL in `backend/drizzle/`.
 
@@ -54,7 +53,7 @@ DB access is grouped by table in `backend/src/db/{users,playlists,prompts}.ts`; 
 | `/api/playlist` | Create the playlist in Spotify + persist it |
 | `/api/social` | Shared feed, like/unlike |
 | `/api/prompts` | Prompt history, delete |
-| `/api/credits` | Prompt credit balance; earn credits via rewarded ad |
+| `/api/credits` | Prompt credit balance |
 
 ### Frontend structure (`src/`)
 
@@ -74,7 +73,7 @@ Backend responses and frontend API calls use a discriminated union `{ ok: true, 
 
 Frontend `.env.local`: `NEXT_PUBLIC_BACKEND_URL` (backend origin).
 
-Backend `.env`: `PORT`, `FRONTEND_URL`, `AUTH_SPOTIFY_ID`, `AUTH_SPOTIFY_SECRET`, `SPOTIFY_REDIRECT_URI`, `SESSION_SECRET` (`openssl rand -base64 32`), `GROQ_API_KEY`, `DATABASE_URL` (Neon), `ADMIN_SPOTIFY_IDS` (comma-separated, optional).
+Backend `.env`: `PORT`, `FRONTEND_URL`, `AUTH_SPOTIFY_ID`, `AUTH_SPOTIFY_SECRET`, `SPOTIFY_REDIRECT_URI`, `SESSION_SECRET` (`openssl rand -base64 32`), `OPENAI_API_KEY` (or the key env for whatever `AI_PROVIDER` is set to), optional `AI_PROVIDER` / `AI_MODEL`, `DATABASE_URL` (Neon), `ADMIN_SPOTIFY_IDS` (comma-separated, optional).
 
 ## Commands
 
@@ -93,6 +92,6 @@ Both servers must be running for the app to work end-to-end.
 ## Conventions to follow
 
 - This is Next.js 16 with breaking changes from older Next.js training data — check `node_modules/next/dist/docs/` before relying on remembered Next.js APIs (see `AGENTS.md`).
-- Keep the frontend a thin client: no Spotify/Groq calls, no DB access, no secrets in `src/`. All of that lives in `backend/`.
+- Keep the frontend a thin client: no Spotify/LLM calls, no DB access, no secrets in `src/`. All of that lives in `backend/`.
 - New backend endpoints: colocate route handler in `routes/`, business logic in `lib/`, DB queries in `db/`, and add a matching discriminated-union result type + DTO in `src/lib/types.ts`.
 - The curator agent's system prompt (`backend/src/lib/agent/curator.ts`) encodes real product rules (vibe fit over taste profile, no duplicate versions of a song, `tracks` is the source of truth for every other field, 8-12 tracks). Treat it as product logic, not boilerplate — read it before changing curation behavior.

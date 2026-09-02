@@ -70,17 +70,3 @@ export const playlistLikes = pgTable(
   },
   (table) => [primaryKey({ columns: [table.playlistId, table.userId] })]
 );
-
-export const adRewards = pgTable(
-  "ad_rewards",
-  {
-    id: text("id").primaryKey().$defaultFn(() => randomUUID()),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    redeemedAt: timestamp("redeemed_at"),
-    expiresAt: timestamp("expires_at").notNull(),
-  },
-  (table) => [index("ad_rewards_user_id_idx").on(table.userId)]
-);

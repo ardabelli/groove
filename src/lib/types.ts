@@ -92,11 +92,3 @@ export type DeletePromptResult =
 export type CreditsResult =
   | { ok: true; data: { credits: number } }
   | { ok: false; error: "unauthenticated" | "unknown"; message?: string };
-
-export type AdStartResult =
-  | { ok: true; data: { token: string; minWatchSeconds: number } }
-  | { ok: false; error: "unauthenticated" | "unknown"; message?: string };
-
-export type AdCompleteResult =
-  | { ok: true; data: { credits: number; creditsAwarded: number } }
-  | { ok: false; error: "unauthenticated" | "invalid_token" | "unknown"; message?: string };

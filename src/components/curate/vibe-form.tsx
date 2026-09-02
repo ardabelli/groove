@@ -2,19 +2,18 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Clapperboard } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CuratorNoteCard } from "@/components/curate/curator-note-card";
 import { TrackList } from "@/components/curate/track-list";
 import { PlaylistCta } from "@/components/curate/playlist-cta";
-import { RewardedAdModal } from "@/components/ads/rewarded-ad-modal";
 import { BACKEND_URL, fetchMe } from "@/lib/backend";
 import type { CurateResult } from "@/lib/types";
 
 const ERROR_MESSAGES: Record<string, string> = {
   unauthenticated: "Your session expired — please sign in again.",
-  insufficient_credits: "You're out of prompt credits — watch an ad to earn one.",
+  insufficient_credits: "You're out of prompt credits.",
   agent_failed: "The curator agent couldn't come up with a set. Try rephrasing the vibe.",
   no_tracks_found: "Couldn't find matching tracks on Spotify. Try a broader vibe.",
   spotify_rate_limited: "Spotify is rate limiting us right now — try again shortly.",
@@ -26,7 +25,6 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
-  const [adModalOpen, setAdModalOpen] = useState(false);
 
   useEffect(() => {
     fetchMe().then((me) => {
@@ -60,7 +58,7 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
       if (result.ok) {
         setCredits(result.data.creditsRemaining);
       } else if (result.error === "insufficient_credits") {
-        setAdModalOpen(true);
+        setCredits(0);
       }
       return result;
     } catch {
@@ -101,41 +99,25 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
           <p className="text-sm text-destructive">{state.message}</p>
         )}
         <div className="flex items-center gap-3">
-          {outOfCredits ? (
-            <Button
-              type="button"
-              onClick={() => setAdModalOpen(true)}
-              className="self-start rounded-full bg-foreground text-background hover:bg-foreground/90"
-            >
-              <Clapperboard className="size-4" />
-              Watch an ad for +1 prompt
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="self-start rounded-full bg-foreground text-background hover:bg-foreground/90"
-            >
-              {isPending && <Loader2 className="size-4 animate-spin" />}
-              {isPending
-                ? isAuthenticated
-                  ? "Curating…"
-                  : "Redirecting to Spotify…"
-                : isAuthenticated
-                  ? "Curate my set"
-                  : "Sign in & curate my set"}
-            </Button>
-          )}
-          {!isAdmin && isAuthenticated && credits !== null && !outOfCredits && (
-            <span className="flex items-center gap-2 text-xs text-muted-foreground">
-              {credits} {credits === 1 ? "prompt" : "prompts"} left
-              <button
-                type="button"
-                onClick={() => setAdModalOpen(true)}
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                watch ad for +1
-              </button>
+          <Button
+            type="submit"
+            disabled={isPending || outOfCredits}
+            className="self-start rounded-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            {isPending && <Loader2 className="size-4 animate-spin" />}
+            {isPending
+              ? isAuthenticated
+                ? "Curating…"
+                : "Redirecting to Spotify…"
+              : isAuthenticated
+                ? "Curate my set"
+                : "Sign in & curate my set"}
+          </Button>
+          {!isAdmin && isAuthenticated && credits !== null && (
+            <span className="text-xs text-muted-foreground">
+              {outOfCredits
+                ? "You're out of prompt credits."
+                : `${credits} ${credits === 1 ? "prompt" : "prompts"} left`}
             </span>
           )}
         </div>
@@ -171,12 +153,6 @@ export function VibeForm({ initialVibe }: { initialVibe?: string }) {
           />
         </div>
       )}
-
-      <RewardedAdModal
-        open={adModalOpen}
-        onOpenChange={setAdModalOpen}
-        onRewarded={setCredits}
-      />
     </div>
   );
 }
