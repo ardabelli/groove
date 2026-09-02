@@ -1,9 +1,9 @@
 import { generateText, Output } from "ai";
-import { groq } from "@ai-sdk/groq";
+import { resolveCuratorModel } from "./model";
 import { CuratorResponseSchema, type CuratorResponse } from "./schema";
 import { formatTasteProfileForPrompt, type EmptyTasteProfile, type TasteProfile } from "./taste-profile";
 
-const MODEL = groq("openai/gpt-oss-120b");
+const MODEL = resolveCuratorModel();
 
 export class AgentError extends Error {
   constructor(message = "The curator agent failed to produce a valid response") {

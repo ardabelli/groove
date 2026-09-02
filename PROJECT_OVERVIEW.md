@@ -22,7 +22,7 @@ Spotify listeners who want a playlist for a specific mood/moment ("rainy Sunday 
 ## Tech stack (for context on what's feasible)
 - **Frontend:** Next.js 16 (App Router) + React 19 + TypeScript, Tailwind, shadcn/base-ui components.
 - **Backend:** separate Express + TypeScript service. Owns Spotify OAuth, the database, and all LLM/Spotify calls.
-- **LLM:** Groq (`openai/gpt-oss-120b`), structured-output/schema-constrained generation, one retry on invalid output.
+- **LLM:** OpenAI (`gpt-4o` by default) via the Vercel AI SDK, provider/model swappable through env (`AI_PROVIDER` / `AI_MODEL`, see `backend/src/lib/agent/model.ts`); structured-output/schema-constrained generation, one retry on invalid output.
 - **DB:** Postgres (Neon, serverless) via Drizzle ORM.
 - **Auth/session:** JWT session cookie holding Spotify access/refresh tokens; backend silently refreshes near expiry.
 
