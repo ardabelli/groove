@@ -1,9 +1,8 @@
-import { generateText, Output } from "ai";
-import { resolveCuratorModel } from "./model";
+import { resolveCuratorGenerate } from "./model";
 import { CuratorResponseSchema, type CuratorResponse } from "./schema";
 import { formatTasteProfileForPrompt, type EmptyTasteProfile, type TasteProfile } from "./taste-profile";
 
-const MODEL = resolveCuratorModel();
+const generate = resolveCuratorGenerate();
 
 export class AgentError extends Error {
   constructor(message = "The curator agent failed to produce a valid response") {
@@ -27,10 +26,36 @@ Given the user's taste profile and vibe, respond with:
 - curator_note: a short, natural-language explanation of the flow you designed (why these tracks, in this order). Only ever refer to songs that are actually in \`tracks\`.
 - playlist_title: a short, catchy title inspired by the vibe — NOT the raw vibe text copied verbatim. Distill it into a real title, under 60 characters, in the same language the user wrote the vibe in. E.g. for the vibe "eski sevgilimden ayrıldım, onu düşünmemi sağlayacak şarkılar" a good title is "Ayrıldıktan Sonra Dinlenecek Şarkılar", not the user's literal sentence.
 - playlist_description: a warm, 1-2 sentence, second-person description for Spotify's playlist description field, written for the listener (not DJ reasoning like curator_note) and in the same language as the vibe — e.g. "Ayrıldığında dinleyeceğin, sana özel seçkilerle dolu bu playlist Groove tarafından hazırlandı." Mention Groove as the curator.
-- mood_parameters: energy level, a few descriptors, and an ordering_intent string describing the arc.`;
+- mood_parameters: energy level, a few descriptors, and an ordering_intent string describing the arc.
+
+OUTPUT FORMAT: Respond with a single raw JSON object and nothing else — no prose, no explanation, no markdown code fences. It must match this shape exactly:
+{
+  "tracks": [{ "artist": "string", "title": "string" }],
+  "curator_note": "string",
+  "playlist_title": "string",
+  "playlist_description": "string",
+  "mood_parameters": {
+    "energy": "low" | "medium" | "high",
+    "descriptors": ["string"],
+    "ordering_intent": "string"
+  }
+}
+"tracks" must have 8-12 entries; "mood_parameters.descriptors" at most 6.`;
 
 function buildUserPrompt(vibe: string, tasteProfile: TasteProfile | EmptyTasteProfile): string {
   return `User's vibe request: "${vibe}"\n\n${formatTasteProfileForPrompt(tasteProfile)}`;
+}
+
+/** Pulls the JSON object out of a model reply that may be fenced or wrapped in prose. */
+function parseJsonObject(text: string): unknown {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced ? fenced[1] : text;
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end < start) {
+    throw new AgentError("Model response did not contain a JSON object");
+  }
+  return JSON.parse(candidate.slice(start, end + 1));
 }
 
 async function requestCuratorResponse(
@@ -42,18 +67,8 @@ async function requestCuratorResponse(
     ? `${buildUserPrompt(vibe, tasteProfile)}\n\n${retryContext}`
     : buildUserPrompt(vibe, tasteProfile);
 
-  const result = await generateText({
-    model: MODEL,
-    system: SYSTEM_PROMPT,
-    prompt,
-    output: Output.object({ schema: CuratorResponseSchema }),
-  });
-
-  if (!result.output) {
-    throw new AgentError("No structured response returned");
-  }
-
-  return result.output;
+  const text = await generate(SYSTEM_PROMPT, prompt);
+  return CuratorResponseSchema.parse(parseJsonObject(text));
 }
 
 export async function runCurator({

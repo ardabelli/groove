@@ -22,7 +22,9 @@ Browser requests to `/api/*` never hit the backend's origin directly — `next.c
 1. User submits a vibe string from `src/components/curate/vibe-form.tsx`.
 2. Frontend calls `POST /api/curate` on the backend.
 3. Backend (`backend/src/routes/curate.ts`) loads the user's Spotify taste profile (`backend/src/lib/agent/taste-profile.ts`, built from `backend/src/lib/spotify/top-items.ts`).
-4. `backend/src/lib/agent/curator.ts` calls the LLM (Vercel AI SDK `generateText` + `Output.object`) with a structured-output schema (`backend/src/lib/agent/schema.ts`) to get back a track list, curator note, title/description, and mood parameters. One retry on schema validation failure. The provider/model is resolved from env in `backend/src/lib/agent/model.ts` (`AI_PROVIDER`, default `openai`; `AI_MODEL`, default `gpt-4o`) — swap providers by installing the matching `@ai-sdk/<name>` package and adding a `case` there.
+4. `backend/src/lib/agent/curator.ts` asks the LLM for a track list, curator note, title/description, and mood parameters, then validates the reply against `CuratorResponseSchema` (`backend/src/lib/agent/schema.ts`). One retry on parse/validation failure. The backend is resolved from env in `backend/src/lib/agent/model.ts` — `resolveCuratorGenerate()` returns a `(system, prompt) => Promise<string>` that returns the model's raw JSON text:
+   - `AI_PROVIDER=openai` (default): Vercel AI SDK `generateText` + `Output.object` (schema-enforced), `AI_MODEL` default `gpt-4o`. Add another AI-SDK provider by installing its `@ai-sdk/<name>` package and adding a `case`.
+   - `AI_PROVIDER=harmona`: no OpenAI-compatible endpoint — a single SSE call to a pre-configured Harmona agent (`POST /b2c/v1/chat`, `backend/src/lib/agent/harmona.ts`), `HARMONA_API_KEY` = the `hapi_` agent key. The agent must be configured in the Harmona dashboard to emit the JSON shape the curator expects; `curator.ts` extracts and Zod-validates it.
 5. `backend/src/lib/agent/build-tracklist.ts` resolves each `{artist, title}` pair to a real Spotify track via `backend/src/lib/spotify/search.ts`.
 6. Result flows back as a `CurateResult` (`src/lib/types.ts`) and renders via `curator-note-card.tsx`, `track-list.tsx`, `playlist-cta.tsx`.
 7. Confirming the CTA calls `POST /api/playlist`, which creates the playlist in the user's actual Spotify account (`backend/src/lib/spotify/playlists.ts`) and persists it to the `playlists` table.
@@ -73,7 +75,7 @@ Backend responses and frontend API calls use a discriminated union `{ ok: true, 
 
 Frontend `.env.local`: `NEXT_PUBLIC_BACKEND_URL` (backend origin).
 
-Backend `.env`: `PORT`, `FRONTEND_URL`, `AUTH_SPOTIFY_ID`, `AUTH_SPOTIFY_SECRET`, `SPOTIFY_REDIRECT_URI`, `SESSION_SECRET` (`openssl rand -base64 32`), `OPENAI_API_KEY` (or the key env for whatever `AI_PROVIDER` is set to), optional `AI_PROVIDER` / `AI_MODEL`, `DATABASE_URL` (Neon), `ADMIN_SPOTIFY_IDS` (comma-separated, optional).
+Backend `.env`: `PORT`, `FRONTEND_URL`, `AUTH_SPOTIFY_ID`, `AUTH_SPOTIFY_SECRET`, `SPOTIFY_REDIRECT_URI`, `SESSION_SECRET` (`openssl rand -base64 32`), `AI_PROVIDER` + its key env (`OPENAI_API_KEY` or `HARMONA_API_KEY`; optional `AI_MODEL`, `AI_BASE_URL`), `DATABASE_URL` (Neon), `ADMIN_SPOTIFY_IDS` (comma-separated, optional).
 
 ## Commands
 
