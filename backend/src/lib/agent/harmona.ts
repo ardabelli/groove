@@ -9,8 +9,10 @@ const REQUEST_TIMEOUT_MS = 120_000;
  * The endpoint (`POST /b2c/v1/chat`) streams a LangGraph event log as SSE. We
  * don't concatenate the `on_chat_model_stream` token deltas — those also carry
  * Harmona's internal guardrail pass (a `{"violation": ...}` JSON blob). Instead we
- * track the last `type: "ai"` message that appears in any event's
- * `data.output.messages`, which is the clean user-facing answer.
+ * prefer the last `type: "ai"` message in any event's `data.output.messages`, and
+ * fall back to concatenating the `on_chain_stream` chunks of `type: "printable"`,
+ * which carry only the user-facing answer (the current API sends no
+ * `output.messages` at all).
  *
  * Each call uses a fresh `external_user_id` so there's no conversation carry-over
  * between curations (the curator is stateless — every request is self-contained).
@@ -48,6 +50,7 @@ export async function requestHarmonaCompletion(message: string): Promise<string>
     const decoder = new TextDecoder();
     let buffer = "";
     let answer = "";
+    let printable = "";
 
     for (;;) {
       const { done, value } = await reader.read();
@@ -69,8 +72,19 @@ export async function requestHarmonaCompletion(message: string): Promise<string>
           continue; // keep-alive / partial line
         }
 
-        const messages = (event as { data?: { output?: { messages?: unknown } } })?.data?.output
-          ?.messages;
+        const data = (event as { data?: { output?: { messages?: unknown }; chunk?: unknown } })
+          ?.data;
+
+        const chunk = data?.chunk as { type?: string; content?: unknown; content_type?: string };
+        if (
+          chunk?.type === "printable" &&
+          chunk.content_type === "text" &&
+          typeof chunk.content === "string"
+        ) {
+          printable += chunk.content;
+        }
+
+        const messages = data?.output?.messages;
         if (!Array.isArray(messages)) continue;
 
         for (let i = messages.length - 1; i >= 0; i--) {
@@ -83,6 +97,7 @@ export async function requestHarmonaCompletion(message: string): Promise<string>
       }
     }
 
+    if (!answer.trim()) answer = printable;
     if (!answer.trim()) throw new Error("Harmona returned no assistant message");
     return answer;
   } finally {
