@@ -27,7 +27,7 @@ const TrackSchema = z.object({
 const BodySchema = z.object({
   playlistTitle: z.string().min(1).max(60),
   playlistDescription: z.string().min(1).max(300),
-  curatorNote: z.string().min(1).max(600),
+  curatorNote: z.string().min(1).max(1000),
   moodParameters: z.object({
     energy: z.enum(["low", "medium", "high"]),
     descriptors: z.array(z.string()).max(6),

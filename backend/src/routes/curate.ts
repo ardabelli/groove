@@ -4,7 +4,7 @@ import { AuthError, getAuthContext } from "../lib/session";
 import { getTopTracks, getTopArtists, type TimeRange } from "../lib/spotify/top-items";
 import { SpotifyRateLimitError } from "../lib/spotify/errors";
 import { buildTasteProfile } from "../lib/agent/taste-profile";
-import { runCurator, AgentError } from "../lib/agent/curator";
+import { runCurator, rewriteCuratorNote, AgentError } from "../lib/agent/curator";
 import { buildTracklist } from "../lib/agent/build-tracklist";
 import { createPromptRecord } from "../db/prompts";
 import type { CurateResult, TrackDTO } from "../lib/agent/types";
@@ -82,21 +82,36 @@ curateRouter.post("/", async (req, res) => {
 
     const curatorResponse = await runCurator({ vibe, tasteProfile });
 
-    const tracks = await buildTracklist(accessToken, curatorResponse.tracks);
-    if (tracks.length === 0) {
+    const resolved = await buildTracklist(accessToken, curatorResponse.tracks);
+    if (resolved.length === 0) {
       res.json({ ok: false, error: "no_tracks_found" } satisfies CurateResult);
       return;
+    }
+
+    // The note names every pick, so drop the ones Spotify couldn't find from it too.
+    let curatorNote = curatorResponse.curator_note;
+    const remainingTracks = resolved.map((r) => r.selection);
+    const removedTracks = curatorResponse.tracks.filter((t) => !remainingTracks.includes(t));
+    if (removedTracks.length > 0) {
+      try {
+        curatorNote = await rewriteCuratorNote({ vibe, curatorNote, removedTracks, remainingTracks });
+      } catch (err) {
+        console.error(
+          "[POST /api/curate] failed to rewrite curator note, keeping the original:",
+          err instanceof Error ? err.message : err
+        );
+      }
     }
 
     res.json({
       ok: true,
       data: {
-        curatorNote: curatorResponse.curator_note,
+        curatorNote,
         playlistTitle: curatorResponse.playlist_title,
         playlistDescription: curatorResponse.playlist_description,
         moodParameters: curatorResponse.mood_parameters,
         usedPersonalization: !tasteProfile.empty,
-        tracks: tracks.map(toTrackDTO),
+        tracks: resolved.map((r) => toTrackDTO(r.track)),
       },
     } satisfies CurateResult);
   } catch (err) {

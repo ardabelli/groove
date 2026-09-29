@@ -7,7 +7,7 @@ const TrackSelectionSchema = z.object({
 
 export const CuratorResponseSchema = z.object({
   tracks: z.array(TrackSelectionSchema).min(8).max(12),
-  curator_note: z.string().min(1).max(600),
+  curator_note: z.string().min(1).max(1000),
   playlist_title: z.string().min(1).max(60),
   playlist_description: z.string().min(1).max(300),
   mood_parameters: z.object({
